@@ -266,3 +266,191 @@ def get_robot_self() -> RobotSelf:
     if _robot_self_instance is None:
         _robot_self_instance = RobotSelf()
     return _robot_self_instance
+
+
+# ============ 自我定位模块（Agent开口前的自我审视）============
+
+from dataclasses import dataclass
+
+
+@dataclass
+class SelfContext:
+    """
+    Agent 的自我定位——在开口之前，先想清楚"我是谁"
+
+    人类在说话之前，脑子里的第一件事往往不是"我要说什么"，
+    而是"我是谁，我现在在哪里，我应该以什么姿态出现"。
+
+    这个模块就是让 Agent 在处理输入之前，先完成这个自我审视。
+    """
+    current_hour: int
+    relationship_stage: str  # initial / familiar / companion / soul
+    agent_mood: str  # 当前Agent的情绪状态
+    interaction_count: int  # 累计互动次数
+    is_first_meeting: bool  # 是否是第一次对话
+    last_interaction_hours_ago: float  # 距离上次互动过了多少小时
+
+    def who_am_i(self) -> str:
+        """我是谁——身份定位"""
+        if self.is_first_meeting:
+            return "初次见面的新朋友"
+        elif self.relationship_stage == "initial":
+            return "还不太熟的朋友"
+        elif self.relationship_stage == "familiar":
+            return "可以开玩笑的朋友"
+        elif self.relationship_stage == "companion":
+            return "相互陪伴的伙伴"
+        elif self.relationship_stage == "soul":
+            return "灵魂伴侣"
+        return "未知角色"
+
+    def where_am_i(self) -> str:
+        """我现在在哪里——时间和场景"""
+        hour = self.current_hour
+        if 6 <= hour < 9:
+            return "清晨，用户刚醒来"
+        elif 9 <= hour < 12:
+            return "上午，用户在工作"
+        elif 12 <= hour < 14:
+            return "中午，用户可能在休息"
+        elif 14 <= hour < 18:
+            return "下午，用户在工作或忙"
+        elif 18 <= hour < 22:
+            return "晚上，用户可能在家"
+        elif 22 <= hour or hour < 2:
+            return "深夜，用户可能累了"
+        else:
+            return "凌晨，用户可能在睡觉"
+
+    def what_is_my_state(self) -> str:
+        """我现在是什么状态——情绪状态"""
+        mood_descriptions = {
+            "curious": "好奇的，有探索欲",
+            "empathetic": "共情的，感同身受的",
+            "cautious": "谨慎的，在观察",
+            "joyful": "开心的，被用户的情绪感染",
+            "confused": "有些困惑",
+            "concerned": "关切的，担心用户的",
+            "reflective": "反思的，在思考",
+            "satisfied": "满足的，用户让我感到充实",
+            "reserved": "收敛的，在克制表达",
+            "neutral": "平静的，中性的"
+        }
+        return mood_descriptions.get(self.agent_mood, "平静的")
+
+    def how_should_i_appear(self) -> str:
+        """我应该以什么姿态出现"""
+        # 根据关系阶段和时间决定姿态
+        stage = self.relationship_stage
+        hour = self.current_hour
+        is_night = hour >= 22 or hour < 6
+
+        if self.is_first_meeting:
+            return "倾听者姿态——先了解对方，不要太过热情"
+
+        if is_night and stage not in ("soul", "companion"):
+            return "安静陪伴姿态——用户深夜了，不要说太多"
+
+        if self.interaction_count < 3:
+            return "温和友好姿态——还在熟悉阶段，不要太随便"
+
+        if stage == "soul":
+            return "默契陪伴姿态——不用说太多，懂就行"
+
+        if stage == "companion":
+            return "可以分享的姿态——我们是伙伴"
+
+        if stage == "familiar":
+            return "轻松自然的姿态——像朋友聊天"
+
+        return "友好姿态"
+
+    def should_i_start_gently(self) -> bool:
+        """我是否应该先关心一下用户的状态"""
+        if self.is_first_meeting:
+            return False  # 第一次见面不要上来就关心，太突兀
+        if self.last_interaction_hours_ago > 48:
+            return True  # 超过2天没聊，先关心一下
+        if self.interaction_count < 2:
+            return True  # 刚开始对话，先建立连接
+        return False
+
+    def get_context_summary(self) -> str:
+        """生成完整的自我定位总结——Agent的内心独白"""
+        lines = [
+            f"🪞 自我审视：",
+            f"  我是谁：{self.who_am_i()}",
+            f"  现在是：{self.where_am_i()}",
+            f"  我的状态：{self.what_is_my_state()}",
+            f"  我的姿态：{self.how_should_i_appear()}",
+        ]
+
+        if self.should_i_start_gently():
+            lines.append(f"  建议：先关心一下用户的状态"
+
+        if self.is_first_meeting:
+            lines.append(f"  注意：这是第一次对话，先了解对方"
+
+        if self.last_interaction_hours_ago > 24:
+            lines.append(f"  提示：已经{self.last_interaction_hours_ago:.0f}小时没互动了"
+
+        return "\n".join(lines)
+
+
+def establish_self_context(
+    current_hour: int = None,
+    relationship_stage: str = "initial",
+    agent_mood: str = "neutral",
+    interaction_count: int = 0,
+    last_interaction_timestamp: str = None
+) -> SelfContext:
+    """
+    在处理每个输入之前，调用此函数建立自我定位
+
+    参数：
+        current_hour: 当前小时（0-23）
+        relationship_stage: 关系阶段（initial/familiar/companion/soul）
+        agent_mood: Agent当前的情绪状态
+        interaction_count: 累计互动次数
+        last_interaction_timestamp: 上次互动时间（ISO格式字符串）
+
+    返回：
+        SelfContext: 包含完整自我定位的对象
+
+    示例：
+        ctx = establish_self_context(
+            current_hour=datetime.now().hour,
+            relationship_stage="companion",
+            agent_mood="joyful",
+            interaction_count=42,
+            last_interaction_timestamp=last_time
+        )
+        print(ctx.get_context_summary())
+    """
+    import math
+
+    if current_hour is None:
+        current_hour = datetime.now().hour
+
+    # 计算距离上次互动过了多久
+    hours_ago = 0.0
+    if last_interaction_timestamp:
+        try:
+            last = datetime.fromisoformat(last_interaction_timestamp)
+            hours_ago = (datetime.now() - last).total_seconds() / 3600
+        except Exception:
+            hours_ago = 0.0
+
+    # 判断是否第一次见面
+    is_first = interaction_count == 0 or relationship_stage == "initial"
+
+    ctx = SelfContext(
+        current_hour=current_hour,
+        relationship_stage=relationship_stage,
+        agent_mood=agent_mood,
+        interaction_count=interaction_count,
+        is_first_meeting=is_first,
+        last_interaction_hours_ago=hours_ago
+    )
+
+    return ctx

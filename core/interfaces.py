@@ -165,6 +165,12 @@ class AgentEmotionalState:
         if len(self.mood_history) > 50:
             self.mood_history = self.mood_history[-50:]
     
+    def get_last_mood(self) -> Optional[Dict]:
+        """获取最近一次情绪记录"""
+        if self.mood_history:
+            return self.mood_history[-1]
+        return None
+
     def reflect(self) -> str:
         """生成 Agent 的自我情绪描述"""
         mood_descriptions = {
@@ -180,7 +186,7 @@ class AgentEmotionalState:
             AgentMood.NEUTRAL: "平静",
         }
         mood_text = mood_descriptions.get(self.current_mood, "平静")
-        
+
         if self.trigger_reason:
             return f"我此刻感到{mood_text}，因为{self.trigger_reason}"
         else:

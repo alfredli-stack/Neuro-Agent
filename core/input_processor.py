@@ -3,12 +3,12 @@ core/input_processor.py
 ======================
 
 Neuro-Agent 核心调度层 - 输入处理器
-负责：接收用户输入、分发给四区并行处理、汇总结果
+负责:接收用户输入、分发给四区并行处理、汇总结果
 
 【4.1 升级】
-- 接入 Agent 自我情绪记录（AgentEmotionalState）
-- 接入 RobotSelf（自我意识 + 冲动记录）
-- 统一接口协议，消除临时 Mock 类
+- 接入 Agent 自我情绪记录(AgentEmotionalState)
+- 接入 RobotSelf(自我意识 + 冲动记录)
+- 统一接口协议,消除临时 Mock 类
 """
 
 from typing import Dict, List, Optional, Any
@@ -29,7 +29,7 @@ class ParallelResult:
     agent_state: AgentEmotionalState  # 【新增】Agent 自我情绪
     execution_context: Dict
     processing_time_ms: float
-    
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -42,7 +42,7 @@ class NeuroAgentInput:
     context: Dict
     user_profile: Dict
     relationship_stage: str
-    
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -57,7 +57,7 @@ class NeuroAgentOutput:
     proactive_message: str
     agent_emotion: Dict  # 【新增】Agent 自我情绪快照
     metadata: Dict
-    
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -66,18 +66,18 @@ class NeuroAgentOutput:
 class InputProcessor:
     """
     输入处理器
-    
-    功能：
+
+    功能:
         1. 接收用户输入
-        2. 并行分发到四区（情绪、逻辑、记忆、关系）
+        2. 并行分发到四区(情绪、逻辑、记忆、关系)
         3. 【新增】在每个节点记录 Agent 的自我情绪
         4. 汇总各区输出
         5. 返回统一结果
-    
-    处理流程：
+
+    处理流程:
         user_input → [并行处理] → 左脑 + 右脑 + 颞叶 + 边缘
                                   ↓
-                              前额叶（汇总）
+                              前额叶(汇总)
                               ↓
                           【同时记录 Agent 自我情绪】
                               ↓
@@ -85,17 +85,17 @@ class InputProcessor:
                               ↓
                           最终回应
     """
-    
+
     def __init__(self):
         """初始化输入处理器"""
         self._left_initialized = False
         self._right_initialized = False
         self._temporal_initialized = False
         self._limbic_initialized = False
-        
-        # 【新增】Agent 自我情绪状态（贯穿整个处理流程）
+
+        # 【新增】Agent 自我情绪状态(贯穿整个处理流程)
         self.agent_state = AgentEmotionalState()
-    
+
     # ============ 懒加载各模块 ============
     def _init_left(self):
         """懒加载左脑模块"""
@@ -113,7 +113,7 @@ class InputProcessor:
                 self.emotion_detector = None
                 self.empathy_generator = None
                 self.capsule_factory = None
-    
+
     def _init_right(self):
         """懒加载右脑模块"""
         if not self._right_initialized:
@@ -130,7 +130,7 @@ class InputProcessor:
                 self.intent_classifier = None
                 self.logic_parser = None
                 self.solution_generator = None
-    
+
     def _init_temporal(self):
         """懒加载颞叶模块"""
         if not self._temporal_initialized:
@@ -144,7 +144,7 @@ class InputProcessor:
                 print(f"⚠️ 颞叶模块加载失败: {e}")
                 self.short_term_memory = None
                 self.long_term_memory = None
-    
+
     def _init_limbic(self):
         """懒加载边缘模块"""
         if not self._limbic_initialized:
@@ -155,7 +155,7 @@ class InputProcessor:
             except ImportError as e:
                 print(f"⚠️ 边缘模块加载失败: {e}")
                 self.relationship_manager = None
-    
+
     def _init_self_awareness(self):
         """懒加载自我意识模块"""
         if not hasattr(self, '_self_awareness_initialized'):
@@ -167,82 +167,148 @@ class InputProcessor:
                 print(f"⚠️ 自我意识模块加载失败: {e}")
                 self.robot_self = None
                 self._self_awareness_initialized = True
-    
+
+    def _establish_self_context(self, context: Dict) -> 'SelfContext':
+        """
+        【核心】在处理输入之前，建立自我定位
+
+        人类开口前第一件事不是"说什么"，而是"我是谁，我现在在哪里"
+        这个方法就是让 Agent 完成这个自我审视
+        """
+        try:
+            from core.self_awareness import establish_self_context
+
+            # 从各模块获取上下文信息
+            hour = context.get("hour", datetime.now().hour)
+            relationship_stage = context.get("relationship_stage", "initial")
+            interaction_count = context.get("interaction_count", 0)
+            last_interaction = context.get("last_interaction_timestamp", None)
+
+            # 获取 Agent 当前的情绪状态
+            agent_mood = "neutral"
+            if hasattr(self, 'agent_state') and self.agent_state:
+                last_mood = self.agent_state.get_last_mood()
+                if last_mood:
+                    agent_mood = last_mood.get("mood", "neutral")
+
+            # 建立自我定位
+            self_context = establish_self_context(
+                current_hour=hour,
+                relationship_stage=relationship_stage,
+                agent_mood=agent_mood,
+                interaction_count=interaction_count,
+                last_interaction_timestamp=last_interaction
+            )
+
+            # 打印自我定位（debug或日志用）
+            if context.get("verbose", False):
+                print("[InputProcessor] " + self_context.get_context_summary().replace("\n", " "))
+
+            return self_context
+
+        except ImportError:
+            # 如果自我意识模块不存在，返回一个默认的
+            from core.self_awareness import SelfContext
+            return SelfContext(
+                current_hour=context.get("hour", datetime.now().hour),
+                relationship_stage="initial",
+                agent_mood="neutral",
+                interaction_count=0,
+                is_first_meeting=True,
+                last_interaction_hours_ago=0.0
+            )
+        except Exception as e:
+            print(f"⚠️ 自我定位失败: {e}")
+            from core.self_awareness import SelfContext
+            return SelfContext(
+                current_hour=datetime.now().hour,
+                relationship_stage="initial",
+                agent_mood="neutral",
+                interaction_count=0,
+                is_first_meeting=True,
+                last_interaction_hours_ago=0.0
+            )
+
     # ============ 核心处理流程 ============
     def process(self, user_input: str, context: Dict = None) -> NeuroAgentOutput:
         """
-        处理用户输入（主流程）
-        
-        【新增】每个节点同时记录 Agent 自我情绪
+        处理用户输入(主流程)
+
+        【新增v5.1】在开口之前,先完成自我定位--
+        "我是谁,现在是什么时候,我应该以什么姿态出现"
         """
         import time
         start_time = time.time()
-        
+
         context = context or {}
-        
+
         # 初始化各模块
         self._init_left()
         self._init_right()
         self._init_temporal()
         self._init_limbic()
         self._init_self_awareness()
-        
+
+        # ===== 【新增】Phase 0: 自我定位 =====
+        # 在开口之前，先想清楚"我是谁"
+        self_context = self._establish_self_context(context)
+
         # ===== Phase 1: 并行处理 =====
-        
-        # 左脑：情绪检测 + 共情生成
+
+        # 左脑:情绪检测 + 共情生成
         left_result = self._process_left(user_input, context)
-        
+
         # 【触发点1】左脑检测完毕 → 推断 Agent 此刻情绪
         self._record_agent_mood_after_left(left_result, context)
-        
-        # 右脑：意图分类 + 逻辑解析 + 方案生成
+
+        # 右脑:意图分类 + 逻辑解析 + 方案生成
         right_result = self._process_right(user_input, left_result, context)
-        
-        # 【触发点2】右脑识别完毕 → 更新 Agent 情绪（尤其是不确定时）
+
+        # 【触发点2】右脑识别完毕 → 更新 Agent 情绪(尤其是不确定时)
         self._record_agent_mood_after_right(left_result, right_result, context)
-        
-        # 颞叶：记忆检索
+
+        # 颞叶:记忆检索
         temporal_result = self._process_temporal(user_input, left_result, right_result)
-        
+
         # ===== Phase 2: 前额叶汇总 =====
-        
+
         executor_result = self._process_executor(
             left_result, right_result, temporal_result, context
         )
-        
+
         # 【触发点3】执行方案确定前 → Agent 对自己选择的自我质疑
         self._record_agent_mood_after_executor(left_result, right_result, executor_result)
-        
+
         monitor_result = self._process_monitor(
             executor_result,
             {"left": left_result, "right": right_result, "temporal": temporal_result},
             context
         )
-        
+
         fusion_result = self._process_fusion(
             monitor_result,
             {"left": left_result, "right": right_result, "temporal": temporal_result},
             context
         )
-        
+
         # 【触发点4】融合输出 → Agent 反思"我为什么这样回复"
         self._record_agent_mood_after_fusion(
             left_result, right_result, fusion_result, context
         )
-        
+
         # ===== Phase 3: 后处理 =====
-        
+
         capsules = self._process_capsules(user_input, left_result)
-        
+
         if self._limbic_initialized and self.relationship_manager:
             self._update_relationship(user_input, left_result, right_result)
-        
+
         processing_time = (time.time() - start_time) * 1000
-        
+
         # 【触发点5】存档时 → Agent 记录"这件事让我想到什么"
         if capsules and self.robot_self:
             self._record_impulse_after_capsule(user_input, left_result, right_result, capsules)
-        
+
         return NeuroAgentOutput(
             response=fusion_result.get("response", "好的。"),
             capsules_to_save=capsules,
@@ -263,9 +329,9 @@ class InputProcessor:
                 }
             }
         )
-    
-    # ============ Agent 情绪记录（5个触发点）============
-    
+
+    # ============ Agent 情绪记录(5个触发点)============
+
     def _record_agent_mood_after_left(self, left_result: Dict, context: Dict):
         """
         【触发点1】左脑检测到用户情绪后
@@ -273,45 +339,45 @@ class InputProcessor:
         """
         emotion_type = left_result.get("emotion_type", "neutral")
         empathy_level = left_result.get("empathy_level", 0.5)
-        
+
         # 情绪镜像 + 共情强度影响
         if emotion_type in ("joy", "excitement", "love", "gratitude"):
             self.agent_state.record(
                 mood=AgentMood.JOYFUL,
                 intensity=min(empathy_level, 0.7),
-                reason=f"用户表达{emotion_type}，我感到被这种情绪感染",
+                reason=f"用户表达{emotion_type},我感到被这种情绪感染",
                 confidence=0.7
             )
         elif emotion_type in ("sadness", "loneliness"):
             self.agent_state.record(
                 mood=AgentMood.CONCERNED,
                 intensity=empathy_level,
-                reason=f"用户表达{emotion_type}，我想给予关心",
+                reason=f"用户表达{emotion_type},我想给予关心",
                 confidence=0.8
             )
         elif emotion_type in ("anger", "frustration"):
             self.agent_state.record(
                 mood=AgentMood.CAUTIOUS,
                 intensity=0.4,
-                reason="用户有愤怒情绪，我需要谨慎措辞",
+                reason="用户有愤怒情绪,我需要谨慎措辞",
                 confidence=0.7
             )
         elif emotion_type == "fear":
             self.agent_state.record(
                 mood=AgentMood.CONCERNED,
                 intensity=0.5,
-                reason="用户感到恐惧，我想安慰",
+                reason="用户感到恐惧,我想安慰",
                 confidence=0.7
             )
-    
+
     def _record_agent_mood_after_right(self, left_result: Dict, right_result: Dict, context: Dict):
         """
         【触发点2】右脑识别出用户意图后
-        特别关注：不确认、边界情况
+        特别关注:不确认、边界情况
         """
         intent_type = right_result.get("intent_type", "casual_chat")
         confidence = right_result.get("confidence", 0.5)
-        
+
         if intent_type == "question":
             if confidence < 0.5:
                 self.agent_state.record(
@@ -324,62 +390,62 @@ class InputProcessor:
                 self.agent_state.record(
                     mood=AgentMood.CURIOUS,
                     intensity=0.4,
-                    reason="用户提出了问题，我想帮他找到答案",
+                    reason="用户提出了问题,我想帮他找到答案",
                     confidence=0.6
                 )
         elif intent_type == "task_request":
             self.agent_state.record(
                 mood=AgentMood.EMPATHETIC,
                 intensity=0.5,
-                reason="用户请求帮助，我会尽力做好",
+                reason="用户请求帮助,我会尽力做好",
                 confidence=0.7
             )
         elif intent_type == "deep_connection":
             self.agent_state.record(
                 mood=AgentMood.REFLECTIVE,
                 intensity=0.6,
-                reason="用户聊了一些深入的话题，我也有所思考",
+                reason="用户聊了一些深入的话题,我也有所思考",
                 confidence=0.6
             )
-    
+
     def _record_agent_mood_after_executor(self, left_result: Dict, right_result: Dict, executor_result: Dict):
         """
         【触发点3】执行方案确定后
-        Agent 做自我质疑："我为什么选择这样回复？"
+        Agent 做自我质疑:"我为什么选择这样回复?"
         """
         strategy_type = executor_result.get("strategy_type", "unknown") if isinstance(executor_result, dict) else "unknown"
         emotion_type = left_result.get("emotion_type", "neutral")
-        
+
         if strategy_type == "empathy_first" and emotion_type in ("sadness", "anger"):
             # 选择了情感优先策略 → Agent 感到自己在"用力共情"
             self.agent_state.record(
                 mood=AgentMood.GROWING,
                 intensity=0.4,
-                reason="我选择先共情再给建议，希望用户能感受到被理解",
+                reason="我选择先共情再给建议,希望用户能感受到被理解",
                 confidence=0.6
             )
         elif strategy_type == "task_first":
             self.agent_state.record(
                 mood=AgentMood.CAUTIOUS,
                 intensity=0.3,
-                reason="我选择了先解决任务，但也在意用户的情绪",
+                reason="我选择了先解决任务,但也在意用户的情绪",
                 confidence=0.5
             )
-    
+
     def _record_agent_mood_after_fusion(self, left_result: Dict, right_result: Dict,
                                          fusion_result: Dict, context: Dict):
         """
         【触发点4】融合输出后
-        Agent 反思"我为什么这样回复，而不是那样回复"
+        Agent 反思"我为什么这样回复,而不是那样回复"
         """
         response_style = fusion_result.get("response_style", "unknown")
         emotion_type = left_result.get("emotion_type", "neutral")
-        
+
         if response_style == "warm" or response_style == "empathetic":
             self.agent_state.record(
                 mood=AgentMood.EMPATHETIC,
                 intensity=0.5,
-                reason="我用温暖的语气回应，希望能传递关心",
+                reason="我用温暖的语气回应,希望能传递关心",
                 confidence=0.6
             )
         elif response_style == "balanced":
@@ -389,19 +455,19 @@ class InputProcessor:
                 reason="我选择了平衡的回应方式",
                 confidence=0.5
             )
-    
+
     def _record_impulse_after_capsule(self, user_input: str, left_result: Dict,
                                         right_result: Dict, capsules: List):
         """
         【触发点5】胶囊存档时
-        如果 RobotSelf 可用，记录一次冲动/选择经历
+        如果 RobotSelf 可用,记录一次冲动/选择经历
         """
         if not self.robot_self:
             return
-        
+
         emotion_type = left_result.get("emotion_type", "neutral")
         intent_type = right_result.get("intent_type", "casual_chat")
-        
+
         # 构造 Agent 的内心"冲动"
         if emotion_type in ("sadness", "anger", "fear"):
             left_desire = f"想要更多关心用户({emotion_type})"
@@ -412,32 +478,32 @@ class InputProcessor:
         else:
             left_desire = "想要更个性化地回应"
             right_constraint = "但要保持专业和适度"
-        
+
         try:
             self.robot_self.make_choice(
-                situation=f"用户说：{user_input[:30]}...",
+                situation=f"用户说:{user_input[:30]}...",
                 left_desire=left_desire,
                 right_constraint=right_constraint
             )
         except Exception as e:
             print(f"⚠️ RobotSelf 冲动记录失败: {e}")
-    
-    # ============ 各区处理（保持原有逻辑） ============
-    
+
+    # ============ 各区处理(保持原有逻辑) ============
+
     def _process_left(self, user_input: str, context: Dict) -> Dict:
-        """处理左脑（情绪 + 共情）"""
+        """处理左脑(情绪 + 共情)"""
         if not self._left_initialized:
             return {"emotion_type": "neutral", "emotion_score": 0.3, "empathy_level": 0.5, "empathy_phrases": []}
-        
+
         try:
             emotion_output = self.emotion_detector.detect(user_input, context)
-            
+
             user_context = {
                 "relationship_stage": context.get("relationship_stage", "initial"),
                 "user_name": context.get("user_name", "")
             }
             empathy_output = self.empathy_generator.generate(emotion_output, user_context)
-            
+
             return {
                 "emotion_score": emotion_output.emotion_score,
                 "emotion_type": emotion_output.emotion_type,
@@ -459,12 +525,12 @@ class InputProcessor:
         except Exception as e:
             print(f"⚠️ 左脑处理异常: {e}")
             return {"emotion_type": "neutral", "emotion_score": 0.3, "empathy_level": 0.5, "empathy_phrases": []}
-    
+
     def _process_right(self, user_input: str, left_result: Dict, context: Dict) -> Dict:
-        """处理右脑（意图 + 逻辑 + 方案）"""
+        """处理右脑(意图 + 逻辑 + 方案)"""
         if not self._right_initialized:
             return {"intent_type": "casual_chat", "confidence": 0.5, "needs_tools": [], "best_solution": None}
-        
+
         try:
             emotion_output = left_result.get("emotion_output")
             intent_output = self.intent_classifier.classify(user_input, emotion_output)
@@ -476,7 +542,7 @@ class InputProcessor:
                     "empathy_phrase": left_result.get("empathy_phrases", [""])[0] if left_result.get("empathy_phrases") else ""
                 }
             )
-            
+
             return {
                 "intent_type": intent_output.intent_type,
                 "confidence": intent_output.confidence,
@@ -497,12 +563,12 @@ class InputProcessor:
         except Exception as e:
             print(f"⚠️ 右脑处理异常: {e}")
             return {"intent_type": "casual_chat", "confidence": 0.5, "needs_tools": [], "best_solution": None}
-    
+
     def _process_temporal(self, user_input: str, left_result: Dict, right_result: Dict) -> Dict:
-        """处理颞叶（记忆检索）"""
+        """处理颞叶(记忆检索)"""
         if not self._temporal_initialized:
             return {"retrieved_capsules": [], "short_term": {}}
-        
+
         try:
             retrieved = []
             if hasattr(self.long_term_memory, 'retrieve'):
@@ -510,7 +576,7 @@ class InputProcessor:
                     retrieved = self.long_term_memory.retrieve(user_input, limit=5)
                 except Exception:
                     pass
-            
+
             capsule_output = None
             if self._left_initialized and self.capsule_factory:
                 emotion_output = left_result.get("emotion_output")
@@ -518,7 +584,7 @@ class InputProcessor:
                     capsule_output = self.capsule_factory.create_multiple(
                         user_input, emotion_output
                     )
-            
+
             return {
                 "retrieved_capsules": retrieved,
                 "capsule_output": capsule_output,
@@ -527,7 +593,7 @@ class InputProcessor:
         except Exception as e:
             print(f"⚠️ 颞叶处理异常: {e}")
             return {"retrieved_capsules": [], "short_term": {}}
-    
+
     def _process_executor(self, left_result: Dict, right_result: Dict,
                          temporal_result: Dict, context: Dict) -> Dict:
         """处理执行层"""
@@ -535,20 +601,20 @@ class InputProcessor:
             from prefrontal.executor import PrefrontalExecutor
             from prefrontal.executor import ExecutorOutput
             executor = PrefrontalExecutor()
-            
+
             emotion_output = left_result.get("emotion_output")
             empathy_output = left_result.get("empathy_output")
             intent_output = right_result.get("intent_output")
             logic_output = right_result.get("logic_output")
             solution_output = right_result.get("solution_output")
-            
+
             executor_result = executor.execute(
                 MockLeft(left_result),
                 MockRight(right_result),
                 MockTemporal(temporal_result),
                 context
             )
-            
+
             return {
                 "base_weights": executor_result.base_weights,
                 "execution_plan": executor_result.execution_plan,
@@ -563,15 +629,15 @@ class InputProcessor:
         except Exception as e:
             print(f"⚠️ 执行层异常: {e}")
             return {"strategy_type": "balanced", "base_weights": None, "execution_plan": None}
-    
+
     def _process_monitor(self, executor_result: Dict, all_outputs: Dict, context: Dict) -> Dict:
         """处理监控层"""
         try:
             from prefrontal.monitor import PrefrontalMonitor
             monitor = PrefrontalMonitor()
-            
+
             executor_output = executor_result.get("executor_output")
-            
+
             if executor_output:
                 monitor_result = monitor.monitor(
                     executor_output,
@@ -590,7 +656,7 @@ class InputProcessor:
             pass
         except Exception as e:
             print(f"⚠️ 监控层异常: {e}")
-        
+
         return {
             "final_weights": executor_result.get("base_weights"),
             "approved_plan": executor_result.get("execution_plan"),
@@ -598,19 +664,19 @@ class InputProcessor:
             "override_log": "降级模式",
             "conflict_score": 0.0
         }
-    
+
     def _process_fusion(self, monitor_result: Dict, all_outputs: Dict, context: Dict) -> Dict:
         """处理融合层"""
         try:
             from prefrontal.fusion_output import FusionOutput
             fusion = FusionOutput()
-            
+
             fusion_result = fusion.fuse(
                 MockMonitorOutput(monitor_result),
                 all_outputs,
                 {**context, "hour": context.get("hour", datetime.now().hour)}
             )
-            
+
             return {
                 "response": fusion_result.response,
                 "response_style": fusion_result.response_style,
@@ -620,26 +686,26 @@ class InputProcessor:
             pass
         except Exception as e:
             print(f"⚠️ 融合层异常: {e}")
-        
+
         generated = all_outputs.get("right", {}).get("generated_response", "")
         empathy = all_outputs.get("left", {}).get("empathy_phrases", [])
-        
+
         if empathy and generated:
             response = f"{empathy[0]} {generated}"
         elif empathy:
             response = empathy[0]
         else:
             response = generated or "好的。"
-        
+
         return {"response": response, "response_style": "fallback"}
-    
+
     def _process_capsules(self, user_input: str, left_result: Dict) -> List:
         """处理胶囊创建"""
         capsules = []
-        
+
         if not self._left_initialized or not self.capsule_factory:
             return capsules
-        
+
         try:
             emotion_output = left_result.get("emotion_output")
             if emotion_output:
@@ -648,15 +714,15 @@ class InputProcessor:
                     capsules = result.capsules
         except Exception as e:
             print(f"⚠️ 胶囊处理异常: {e}")
-        
+
         return capsules
-    
+
     def _update_relationship(self, user_input: str, left_result: Dict, right_result: Dict):
         """更新关系"""
         try:
             from limbic.relationship_manager import Interaction
             from datetime import datetime
-            
+
             interaction = Interaction(
                 timestamp=datetime.now().isoformat(),
                 intent_type=right_result.get("intent_type", "casual_chat"),
@@ -670,15 +736,15 @@ class InputProcessor:
                 care_accepted=False,
                 special_flags=[]
             )
-            
+
             self.relationship_manager.record_interaction(interaction)
         except Exception as e:
             print(f"⚠️ 关系更新异常: {e}")
 
 
-# ============ 临时 Mock 类（供 Executor/Monitor/Fusion 使用）============
-# 【说明】这些是兼容层，用于桥接旧的非接口实现
-# 当所有模块都迁移到接口协议后，这些可以移除
+# ============ 临时 Mock 类(供 Executor/Monitor/Fusion 使用)============
+# 【说明】这些是兼容层,用于桥接旧的非接口实现
+# 当所有模块都迁移到接口协议后,这些可以移除
 
 class MockLeft:
     def __init__(self, data: Dict):
@@ -731,17 +797,17 @@ def process(user_input: str, context: Dict = None) -> NeuroAgentOutput:
 # ============ 测试 ============
 if __name__ == "__main__":
     from datetime import datetime
-    
+
     processor = InputProcessor()
-    
+
     print("=== 输入处理器测试 ===\n")
-    
+
     test_cases = [
-        ("你好啊，今天怎么样？", {"hour": 10}),
-        ("工作好累啊，老板又骂我了", {"hour": 14}),
+        ("你好啊,今天怎么样?", {"hour": 10}),
+        ("工作好累啊,老板又骂我了", {"hour": 14}),
         ("帮我查一下天气", {"hour": 9}),
     ]
-    
+
     for text, ctx in test_cases:
         print(f"【{text}】")
         result = processor.process(text, ctx)
