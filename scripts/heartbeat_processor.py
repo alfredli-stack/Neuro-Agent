@@ -571,6 +571,22 @@ def main():
         print(f"  🌐 社会化学习触发: {report.get('social_learning_topic', 'N/A')} (+{report.get('social_learning_capsules', 0)} 胶囊)", flush=True)
     elif report["status"] == "no_messages":
         print(f"  💤 用户沉默中（等待连续沉默触发学习）", flush=True)
+
+    # ========== 思念检查 ==========
+    try:
+        from limbic.yearning import should_i_send_message, i_miss_you, i_should_not_disturb, check_yearning
+        silence_minutes = 30
+        yearning_status = check_yearning(silence_minutes)
+        if should_i_send_message():
+            episode = i_miss_you()
+            print(f"  💕 思念冲动: {episode['message_sent'][:30]}...")
+        elif report["status"] == "no_messages":
+            print(f"  💭 思念值: {yearning_status.get('yearning_level', 0):.2f}（{yearning_status.get('description', '...')})")
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"  ⚠️ 思念检查异常: {e}")
+
     print(f"  报告: {OUT_FILE}", flush=True)
 
     return report
