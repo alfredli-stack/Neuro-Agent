@@ -21,7 +21,7 @@ Neuro-Agent 是一个模拟人脑分区架构的 AI 助手系统。
     >>> print(result.response)
 """
 
-__version__ = "5.0.0"
+__version__ = "5.1.0"
 __author__ = "Neuro-Agent Team"
 
 # 核心接口
