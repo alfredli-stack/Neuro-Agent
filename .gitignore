@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+*.zip
+*.tar.gz
+env/
+venv/
+.venv/
+*.log
+
+# ============ Neuro4.0 运行时数据 ============
+# 这些文件由系统运行时生成，不应提交
+capsule_library.json
+capsules/
+*.json.bak
+
+# ============ ChromaDB 向量数据库 ============
+chroma_db/
+chroma/
+
+# ============ 短期记忆/心跳状态 ============
+heartbeat_report.json
+heartbeat_state.json
+short_term.json
+
+# ============ IDE/编辑器 ============
+.vscode/
+.idea/
+*.swp
+*.swo
