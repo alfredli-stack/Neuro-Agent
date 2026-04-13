@@ -184,6 +184,101 @@ def record_care_sent() -> None:
     _save_heartbeat_state(state)
 
 
+# ============ 社会化学习触发 ============
+SOCIAL_LEARNING_STATE_FILE = DATA_DIR / "social_learning_state.json"
+
+
+def _load_social_learning_state() -> Dict[str, Any]:
+    if SOCIAL_LEARNING_STATE_FILE.exists():
+        try:
+            with open(SOCIAL_LEARNING_STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "last_learning_date": None,
+        "learning_count_today": 0,
+        "consecutive_idle_heartbeats": 0
+    }
+
+
+def _save_social_learning_state(state: Dict[str, Any]) -> None:
+    SOCIAL_LEARNING_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(SOCIAL_LEARNING_STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def should_trigger_social_learning() -> bool:
+    """
+    判断是否触发社会化学习
+
+    触发条件：
+    - 用户沉默（没有最近对话）连续达到 3 个心跳周期（约1.5小时）
+    - 或者每天固定学习 1-2 次（避免过于频繁）
+    """
+    state = _load_social_learning_state()
+
+    # 每天最多学习 2 次
+    last_date = state.get("last_learning_date", "")
+    today = datetime.now().strftime("%Y-%m-%d")
+    if last_date != today:
+        state["learning_count_today"] = 0
+        state["last_learning_date"] = today
+        _save_social_learning_state(state)
+
+    if state["learning_count_today"] >= 2:
+        return False
+
+    # 沉默心跳计数 +1
+    state["consecutive_idle_heartbeats"] = state.get("consecutive_idle_heartbeats", 0) + 1
+
+    # 连续 3 个心跳周期沉默（约1.5小时）触发
+    if state["consecutive_idle_heartbeats"] >= 3:
+        state["consecutive_idle_heartbeats"] = 0
+        return True
+
+    _save_social_learning_state(state)
+    return False
+
+
+def run_social_learning() -> Dict[str, Any]:
+    """
+    执行社会化学习
+    """
+    print("[heartbeat] 🌐 检测到用户沉默，开始社会化学习...", flush=True)
+
+    try:
+        # 更新学习计数
+        state = _load_social_learning_state()
+        state["learning_count_today"] = state.get("learning_count_today", 0) + 1
+        state["consecutive_idle_heartbeats"] = 0
+        state["last_learning_date"] = datetime.now().strftime("%Y-%m-%d")
+        _save_social_learning_state(state)
+
+        # 执行学习
+        from scripts.social_learning import SocialLearner
+        learner = SocialLearner()
+        result = learner.learn()
+
+        print(f"[heartbeat] 🌐 社会化学习完成:", flush=True)
+        print(f"   主题: {result.get('topic', 'N/A')}", flush=True)
+        print(f"   生成胶囊: {result.get('capsules_created', 0)} 个", flush=True)
+        print(f"   累计胶囊: {result.get('total_capsules', 0)} 个", flush=True)
+
+        return result
+
+    except Exception as e:
+        print(f"[heartbeat] ⚠️ 社会化学习失败: {e}", flush=True)
+        return {"status": "error", "error": str(e)}
+
+
+def reset_idle_counter():
+    """当检测到用户有活动时，重置沉默心跳计数"""
+    state = _load_social_learning_state()
+    state["consecutive_idle_heartbeats"] = 0
+    _save_social_learning_state(state)
+
+
 # ============ 自我意识学习 ============
 def run_consciousness_learning():
     try:
@@ -243,7 +338,20 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
 
         if not recent:
             report["status"] = "no_messages"
+
+            # ========== 用户沉默 → 触发社会化学习 ==========
+            if should_trigger_social_learning():
+                social_result = run_social_learning()
+                report["social_learning_triggered"] = True
+                report["social_learning_topic"] = social_result.get("topic")
+                report["social_learning_capsules"] = social_result.get("capsules_created", 0)
+            else:
+                report["social_learning_triggered"] = False
+
             return report
+
+        # 有对话 → 重置沉默计数
+        reset_idle_counter()
 
         report["messages_analyzed"] = len(recent)
 
@@ -459,6 +567,10 @@ def main():
     print(f"  新胶囊: {len(report['new_capsules'])} 个", flush=True)
     if report.get("care_triggered"):
         print(f"  💗 关怀触发: {report['care_message']}", flush=True)
+    if report.get("social_learning_triggered"):
+        print(f"  🌐 社会化学习触发: {report.get('social_learning_topic', 'N/A')} (+{report.get('social_learning_capsules', 0)} 胶囊)", flush=True)
+    elif report["status"] == "no_messages":
+        print(f"  💤 用户沉默中（等待连续沉默触发学习）", flush=True)
     print(f"  报告: {OUT_FILE}", flush=True)
 
     return report
