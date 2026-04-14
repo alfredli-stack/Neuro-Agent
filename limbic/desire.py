@@ -129,7 +129,7 @@ class SilenceConnectionTrigger(DesireTrigger):
     def __init__(self, user_id: str = "default"):
         self.user_id = user_id
     
-    def check_and_trigger(self, system: DesireSystem) -> list[Desire]:
+    def check_and_trigger(self, system: "DesireSystem") -> list[Desire]:
         # 从记忆中查找用户最后活跃时间
         last_active = system.get_last_user_activity()
         if not last_active:
@@ -167,7 +167,7 @@ class SilenceConnectionTrigger(DesireTrigger):
 class GrowthTrigger(DesireTrigger):
     """成长触发器：完成重要任务后 → 想要更大挑战"""
     
-    def check_and_trigger(self, system: DesireSystem) -> list[Desire]:
+    def check_and_trigger(self, system: "DesireSystem") -> list[Desire]:
         # 检查今天是否完成了重要事件
         today = time.strftime("%Y-%m-%d")
         try:
@@ -198,7 +198,7 @@ class GrowthTrigger(DesireTrigger):
 class NoveltyTrigger(DesireTrigger):
     """新鲜感触发器：发现新话题/领域 → 想要探索"""
     
-    def check_and_trigger(self, system: DesireSystem) -> list[Desire]:
+    def check_and_trigger(self, system: "DesireSystem") -> list[Desire]:
         # 简单兜底：如果当前没有 NOVELTY 欲望，随机小概率触发
         existing = system.get_active_by_category(DesireCategory.NOVELTY)
         if existing:

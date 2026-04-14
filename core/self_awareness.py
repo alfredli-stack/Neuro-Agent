@@ -386,13 +386,13 @@ class SelfContext:
         ]
 
         if self.should_i_start_gently():
-            lines.append(f"  建议：先关心一下用户的状态"
+            lines.append(f"  建议：先关心一下用户的状态")
 
         if self.is_first_meeting:
-            lines.append(f"  注意：这是第一次对话，先了解对方"
+            lines.append(f"  注意：这是第一次对话，先了解对方")
 
         if self.last_interaction_hours_ago > 24:
-            lines.append(f"  提示：已经{self.last_interaction_hours_ago:.0f}小时没互动了"
+            lines.append(f"  提示：已经{self.last_interaction_hours_ago:.0f}小时没互动了")
 
         return "\n".join(lines)
 

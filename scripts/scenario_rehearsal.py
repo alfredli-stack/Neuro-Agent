@@ -293,7 +293,7 @@ class ScenarioRehearsal:
                     consequences.append(Consequence(
                         step=c["step"],
                         outcome_type=OutcomeType(c["type"]),
-                        emotional_weight=EmotionalWeight(c["weight"]),
+                        emotional_weight=EmotionalWeight[c["weight"]],
                         probability=c["prob"]
                     ))
                 except (KeyError, ValueError):
@@ -313,24 +313,24 @@ class ScenarioRehearsal:
                 action="积极行动：主动面对，直接处理",
                 reasoning="面对问题是最有效的方式",
                 consequences=[
-                    Consequence(OutcomeType.POSITIVE, EmotionalWeight.MEDIUM, 0.6, "问题解决"),
-                    Consequence(OutcomeType.NEGATIVE, EmotionalWeight.MEDIUM, 0.3, "出现新问题"),
+                    Consequence(step="问题解决", outcome_type=OutcomeType.POSITIVE, emotional_weight=EmotionalWeight.MEDIUM, probability=0.6),
+                    Consequence(step="出现新问题", outcome_type=OutcomeType.NEGATIVE, emotional_weight=EmotionalWeight.MEDIUM, probability=0.3),
                 ]
             ),
             ActionOption(
                 action="保守行动：等待更多信息，再做决定",
                 reasoning="信息不足时，谨慎是合理的",
                 consequences=[
-                    Consequence(OutcomeType.NEUTRAL, EmotionalWeight.LOW, 0.5, "时间流逝"),
-                    Consequence(OutcomeType.POSITIVE, EmotionalWeight.MEDIUM, 0.4, "等到更多信息"),
+                    Consequence(step="时间流逝", outcome_type=OutcomeType.NEUTRAL, emotional_weight=EmotionalWeight.LOW, probability=0.5),
+                    Consequence(step="等到更多信息", outcome_type=OutcomeType.POSITIVE, emotional_weight=EmotionalWeight.MEDIUM, probability=0.4),
                 ]
             ),
             ActionOption(
                 action="寻求支持：找信任的人商量",
                 reasoning="独自面对困难时，外部视角很重要",
                 consequences=[
-                    Consequence(OutcomeType.POSITIVE, EmotionalWeight.HIGH, 0.6, "获得新视角"),
-                    Consequence(OutcomeType.NEUTRAL, EmotionalWeight.LOW, 0.3, "讨论但没结论"),
+                    Consequence(step="获得新视角", outcome_type=OutcomeType.POSITIVE, emotional_weight=EmotionalWeight.HIGH, probability=0.6),
+                    Consequence(step="讨论但没结论", outcome_type=OutcomeType.NEUTRAL, emotional_weight=EmotionalWeight.LOW, probability=0.3),
                 ]
             ),
         ]
