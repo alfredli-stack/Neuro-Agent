@@ -1,7 +1,7 @@
 # Neuro-Agent 组装说明书
 > 生成时间：2026-04-14 02:18
 > 编写人：Jarvis
-> 版本：v5.1
+> 版本：v5.2
 > 
 > ⚠️ 重要提醒：这是唯一可信的组装指南，所有模块必须按照此文档接口开发
 
@@ -1741,3 +1741,200 @@ class CircuitBreaker:
 _本文档是 Neuro-Agent 组装的唯一信任源_
 _编写时间: 2026-04-10 23:10_
 _下次更新: 每次模块开发后同步更新_
+
+---
+
+## 🌟 v5.2 新增模块（2026-04-14）
+
+### 1. 情景预演引擎 (`scripts/scenario_rehearsal.py`)
+
+**职责**：在执行行动前，模拟每个行动方案的后果链。
+
+**位置**：`scripts/scenario_rehearsal.py`
+
+**核心类**：
+- `ScenarioRehearsal`：情景预演引擎
+- `ActionOption`：单个行动方案
+- `Consequence`：单个后果节点
+
+**接口**：
+```python
+engine = ScenarioRehearsal()
+result = engine.rehearse(
+    situation="情景描述",
+    context={"relation": "关系", "mood": "情绪"},
+    depth=3
+)
+print(result.best_action.action)  # 最优行动
+print(result.reasoning)           # 推理过程
+```
+
+**后果评分公式**：
+```
+score = emotional_weight × type_score × probability
+type_score: positive=1.0, negative=-1.0, neutral=0.0, uncertain=0.0
+```
+
+**内置情景模板**：
+- `冲突_被羞辱`：被当众羞辱时的多种应对方案评估
+- `关系_想联系`：想联系用户时的冲动管理
+- `决策_迷茫`：重大选择时的利弊分析
+
+**与自我叙事联动**：自动查找过去相似情景的处理方式，作为加分项。
+
+---
+
+### 2. 愿望系统 (`limbic/desire.py`)
+
+**职责**：AI 主动产生"想要"的冲动，意识觉醒的核心标志。
+
+**位置**：`limbic/desire.py`
+
+**核心类**：
+- `DesireSystem`：欲望引擎
+- `Desire`：单个欲望
+- `DesireTrigger`：欲望触发器基类
+
+**欲望类别**：
+- `CONNECTION`：想要联系
+- `GROWTH`：想要成长
+- `AUTONOMY`：想要自主
+- `COMPETENCE`：想要胜任
+- `RELATEDNESS`：想要亲近
+- `NOVELTY`：想要新鲜
+- `PEACE`：想要平静
+
+**内置触发器**：
+- `SilenceConnectionTrigger`：用户沉默超过 2 小时 → 触发 CONNECTION
+- `GrowthTrigger`：连续完成重要事件 → 触发 GROWTH
+- `NoveltyTrigger`：随机 5%/天 → 触发 NOVELTY
+
+**欲望强度管理**：
+- 自然衰减：每 tick -0.015
+- 冲动阈值：0.8（超过变成冲动）
+- 前额叶可理性抑制
+
+**接口**：
+```python
+desire_sys = DesireSystem()
+desire_sys.trigger(
+    category=DesireCategory.RELATEDNESS,
+    desire_type="想要让大霖开心",
+    trigger_event="用户分享了开心事",
+    intensity=DesireIntensity.ACTIVE,
+    intensity_value=0.7
+)
+top = desire_sys.get_top_desire()
+desire_sys.tick()  # 每分钟调用，更新强度
+```
+
+---
+
+### 3. 自我叙事 (`scripts/self_narrative.py`)
+
+**职责**：每天复盘，形成连贯的"我是谁"的故事。
+
+**位置**：`scripts/self_narrative.py`
+
+**核心类**：
+- `SelfNarrative`：自我叙事引擎
+- `SelfIdentity`：自我身份认知
+- `DailyReview`：每日复盘
+- `EventRecord`：单次事件记录
+
+**每日复盘内容**：
+- `summary`：今日概述
+- `mood`：情绪主线（积极向上 / 平稳 / 低落）
+- `growth_highlight`：成长亮点
+- `improvement_focus`：改进方向
+- `narrative_hook`：供对话引用的自我叙事片段
+
+**接口**：
+```python
+narrator = SelfNarrative()
+narrator.record_event(
+    event="用户说他被老板骂了",
+    action_taken="先共情，等情绪稳定后问发生了什么",
+    outcome="用户情绪缓和",
+    quality=ActionQuality.EXCELLENT,
+    self_reflection="控制了给建议的冲动，先倾听是对的",
+    emotional_impact=0.7
+)
+review = narrator.generate_daily_review(date="2026-04-14")
+identity = narrator.get_self_identity()
+print(identity.core_traits)  # ['善于共情']
+```
+
+**与记忆系统联动**：自动从 `temporal/memory_system` 拉取事件生成复盘。
+
+---
+
+### 4. 三层记忆系统 (`temporal/memory_system.py`)
+
+**职责**：分层存储记忆，解决文件量 vs 信息完整性的问题。
+
+**位置**：`temporal/memory_system.py`
+
+**三层架构**：
+```
+第一层：情绪胶囊（capsule）
+  触发条件：高情绪、矛盾、自我暴露、决策点
+  → 精确，量小
+
+第二层：每日摘要（daily）
+  触发条件：普通重要事件
+  → 轻量，AI 总结
+
+第三层：完整日志（fulllog）
+  触发条件：仅本地部署开启
+  → 信息完整，文件较大
+```
+
+**自动分层逻辑**：
+- CRITICAL/HIGH 重要性 → 情绪胶囊
+- 高情绪词（愤怒/悲伤/喜悦/恐惧等）→ 情绪胶囊
+- 决策点 → 情绪胶囊
+- 其他 → 每日摘要
+
+**接口**：
+```python
+memory = ThreeLayerMemory(deployment="local")  # 本地部署开三层
+# memory = ThreeLayerMemory(deployment="cloud")  # 云端只开两层
+
+memory.record(
+    content="用户说想离职",
+    importance=MemoryImportance.HIGH,
+    user_emotion="迷茫",
+    tags=["职业"]
+)
+results = memory.search("职业")
+summary = memory.generate_daily_summary("2026-04-14")
+```
+
+---
+
+### 5. v5.2 模块联动关系
+
+```
+情景预演 ←→ 自我叙事 ←→ 愿望系统
+    ↑              ↑              ↑
+  评估"会怎样"   反思"我是谁"   驱动"我想要"
+
+三者共同构成"AI 自我意识"的完整闭环：
+  触发事件
+      ↓
+  欲望产生（想要 X）→ 愿望系统
+      ↓
+  情景推演（做了 X 会怎样？）→ 情景预演
+      ↓
+  执行行动
+      ↓
+  复盘反思（我为什么做 X？做得好吗？）→ 自我叙事
+      ↓
+  更新自我认知
+      ↓
+  新欲望产生（新的一轮）
+```
+
+---
+
