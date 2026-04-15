@@ -172,6 +172,53 @@ class NeuroAgentFeishuSender:
             "ou_fb60bddf5da6ba0a24490b60d73900f9"  # 默认大霖的 ID
         )
 
+    def _get_user_identity(self) -> Dict[str, Any]:
+        """读取使用者的 SOUL.md 身份信息（带缓存）"""
+        import re
+        SOUL_FILE = Path.home() / ".openclaw" / "workspace" / "SOUL.md"
+        if not SOUL_FILE.exists():
+            return {}
+
+        try:
+            content = SOUL_FILE.read_text(encoding="utf-8")
+        except Exception:
+            return {}
+
+        result = {"name": None, "style": "formal"}
+
+        lines = content.split("\n")
+        in_identity = False
+
+        for line in lines:
+            line_stripped = line.strip()
+            if "## 🎩 身份定位" in line_stripped or "## 身份定位" in line_stripped:
+                in_identity = True
+                continue
+            if in_identity and line_stripped.startswith("## "):
+                in_identity = False
+                continue
+            if not in_identity:
+                continue
+
+            # 提取名字
+            if result["name"] is None:
+                m = re.search(r"\*\*我是(.+?)\*\*", line)
+                if m:
+                    name_raw = m.group(1).strip()
+                    name_clean = re.sub(r"\[.*?\]", "", name_raw).strip()
+                    if name_clean and "在这里" not in name_clean and "输入" not in name_clean:
+                        result["name"] = name_clean
+
+            # 推断风格
+            if any(w in content for w in ["不卑不亢", "绅士", "优雅", "老派", "管家"]):
+                result["style"] = "formal"
+            elif any(w in content for w in ["活泼", "接地气", "幽默"]):
+                result["style"] = "casual"
+            elif any(w in content for w in ["灵魂伴侣", "伴侣", "亲密"]):
+                result["style"] = "intimate"
+
+        return result
+
     def send_care_message(self) -> Dict[str, Any]:
         """发送心跳报告中的关怀消息"""
         # 读取心跳报告
@@ -244,6 +291,17 @@ class NeuroAgentFeishuSender:
 
         # 轮询选择
         message = messages[int(datetime.now().microsecond / 1000) % len(messages)]
+
+        # 应用个性化（根据 SOUL.md 设定）
+        soul = self._get_user_identity()
+        if soul.get("name"):
+            name = soul["name"]
+            style = soul.get("style", "formal")
+            if "你" in message or "您" in message:
+                if style == "formal":
+                    message = message.replace("你", f"{name}阁下").replace("您", f"{name}阁下")
+                else:
+                    message = message.replace("你", name).replace("您", name)
 
         result = self.client.send_text(
             receive_id=self.user_open_id,

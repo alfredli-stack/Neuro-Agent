@@ -24,7 +24,9 @@ SCRIPT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 DATA_DIR = Path.home() / ".openclaw" / "workspace" / "neuro_claw"
+WORKSPACE_DIR = Path.home() / ".openclaw" / "workspace"
 OUT_FILE = DATA_DIR / "heartbeat_report.json"
+SOUL_FILE = WORKSPACE_DIR / "SOUL.md"
 
 # ============ 导入 Neuro-Agent 模块 ============
 try:
@@ -90,6 +92,163 @@ LATE_NIGHT_CARE: Dict[str, str] = {
 }
 
 
+# ============ SOUL.md 读取与个性化 ============
+SOUL_CACHE_FILE = DATA_DIR / "soul_cache.json"
+
+
+def _parse_soul_md() -> Dict[str, Any]:
+    """读取并解析 SOUL.md，提取使用者身份信息"""
+    if not SOUL_FILE.exists():
+        return {}
+
+    try:
+        content = SOUL_FILE.read_text(encoding="utf-8")
+    except Exception:
+        return {}
+
+    result = {
+        "name": None,           # 使用者给AI起的名字
+        "ai_title": None,       # AI的称谓/身份描述
+        "creature": None,       # AI的"物种"
+        "personality": None,    # 性格描述
+        "emoji": None,           # 表情符号
+        "style": "formal",      # 沟通风格：formal / casual / intimate
+    }
+
+    lines = content.split("\n")
+    in_identity = False
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+
+        # 检测身份定位区域
+        if "## 🎩 身份定位" in line or "## 身份定位" in line:
+            in_identity = True
+            continue
+
+        # 检测下一个 ## 标题时退出
+        if in_identity and line.startswith("## "):
+            in_identity = False
+
+        if not in_identity:
+            continue
+
+        # 提取名字（支持多种格式）
+        # 格式1: **我是 [名字]**，...
+        # 格式2: **我是[名字]**，...
+        for pattern in ["**我是 ", "**我是", "我是 ", "我是"]:
+            if pattern in line and any(kw in line for kw in ["一个", "你的", "有着", "来自"]):
+                import re
+                m = re.search(r"\*\*我是(.+?)\*\*", line) or re.search(r"(?<=\*\*我是)(.+?)(?=\*\*|$)", line) or re.search(r"(?<=我是)(.+?)(?=\，|\.|,|$)", line)
+                if m:
+                    name_raw = m.group(1).strip()
+                    # 过滤掉括号内容（如 [在这里输入...]）
+                    name_clean = re.sub(r"\[.*?\]", "", name_raw).strip()
+                    if name_clean and "在这里" not in name_clean and "输入" not in name_clean:
+                        result["name"] = name_clean
+                break
+
+        # 提取称谓/身份（第一个段落描述）
+        if result["ai_title"] is None and any(kw in line for kw in ["一个", "你的", "有着"]):
+            import re
+            m = re.search(r"\*\*我是.*?\*\*[,，]?(.+?)[。.]", line)
+            if m:
+                title = m.group(1).strip()
+                if "在这里" not in title and "输入" not in title:
+                    result["ai_title"] = title
+
+        # 提取性格关键词
+        if "我的信条" in line or "我的姿态" in line:
+            result["personality"] = line.split("：")[-1].strip() if "：" in line else None
+
+        # 提取表情符号
+        import re
+        emoji_m = re.search(r"[🦐🐙🦊🐱🐶🐼🦁🐯🐨]", line)
+        if emoji_m:
+            result["emoji"] = emoji_m.group(0)
+
+        # 推断沟通风格
+        if any(w in content for w in ["不卑不亢", "绅士", "优雅", "老派", "管家"]):
+            result["style"] = "formal"
+        elif any(w in content for w in ["活泼", "接地气", "幽默", "随性"]):
+            result["style"] = "casual"
+        elif any(w in content for w in ["灵魂伴侣", "伴侣", "亲密", "深度"]):
+            result["style"] = "intimate"
+
+    return result
+
+
+def _get_cached_soul() -> Dict[str, Any]:
+    """获取缓存的 SOUL 信息（避免频繁读取文件）"""
+    try:
+        if SOUL_CACHE_FILE.exists():
+            with open(SOUL_CACHE_FILE, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            # 缓存有效期：5分钟
+            if cache.get("_cached_at"):
+                cached_time = datetime.fromisoformat(cache["_cached_at"])
+                if (datetime.now() - cached_time).total_seconds() < 300:
+                    return {k: v for k, v in cache.items() if not k.startswith("_")}
+    except Exception:
+        pass
+    return {}
+
+
+def _save_soul_cache(soul_info: Dict[str, Any]) -> None:
+    """保存 SOUL 缓存"""
+    try:
+        SOUL_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        soul_info["_cached_at"] = datetime.now().isoformat()
+        with open(SOUL_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(soul_info, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def get_user_identity() -> Dict[str, Any]:
+    """获取使用者身份信息（带缓存）"""
+    cached = _get_cached_soul()
+    if cached:
+        return cached
+
+    soul_info = _parse_soul_md()
+    if soul_info:
+        _save_soul_cache(soul_info)
+    return soul_info
+
+
+def _personalize_care_message(emotion: str, intensity: float, base_message: str) -> str:
+    """
+    根据使用者的 SOUL.md 设定，个性化关怀消息
+    - 名字称呼（取代"主人"）
+    - 语气风格调整
+    """
+    soul = get_user_identity()
+    if not soul or not soul.get("name"):
+        return base_message
+
+    name = soul["name"]
+    style = soul.get("style", "formal")
+
+    # 替换称呼
+    if "主人" in base_message:
+        if style == "formal":
+            base_message = base_message.replace("主人", f"{name}阁下")
+        elif style == "casual":
+            base_message = base_message.replace("主人", name)
+        else:
+            base_message = base_message.replace("主人", f"{name}")
+
+    # 语气微调（formal 风格更绅士）
+    if style == "formal":
+        if "是不是" in base_message:
+            base_message = base_message.replace("是不是", "是否")
+        if "要不要" in base_message:
+            base_message = base_message.replace("要不要", "是否需要")
+
+    return base_message
+
+
 # ============ 关怀触发状态文件 ============
 HEARTBEAT_STATE_FILE = DATA_DIR / "heartbeat_state.json"
 
@@ -148,20 +307,27 @@ def should_trigger_care(dominant_emotion: str, intensity: float) -> bool:
 
 
 def get_care_message(emotion: str, intensity: float) -> str:
-    """根据情绪和当前时间返回关怀话术"""
+    """根据情绪和当前时间返回关怀话术（支持个性化）"""
     hour = datetime.now().hour
     is_late_night = hour >= 22 or hour < 8
 
     if is_late_night and emotion in LATE_NIGHT_CARE:
-        return LATE_NIGHT_CARE[emotion]
-
-    if emotion in CARE_MESSAGES:
-        return CARE_MESSAGES[emotion]["message"]
+        base = LATE_NIGHT_CARE[emotion]
+    elif emotion in CARE_MESSAGES:
+        base = CARE_MESSAGES[emotion]["message"]
+    else:
+        base = None
 
     # 默认回退
-    if intensity > 2.5:
-        return "主人，你还好吗？需要我帮什么吗？ 💙"
-    return None  # 不需要关怀
+    if base is None:
+        if intensity > 2.5:
+            soul = get_user_identity()
+            name = soul.get("name", "主人")
+            return f"{name}，你还好吗？需要我帮什么吗？ 💙"
+        return None  # 不需要关怀
+
+    # 应用个性化（根据 SOUL.md 设定）
+    return _personalize_care_message(emotion, intensity, base)
 
 
 def record_heartbeat(emotion: str, intensity: float) -> None:
