@@ -108,11 +108,12 @@ class DreamProcess:
             5. 生成明日关怀
             6. 清理低价值胶囊
         """
-        # 1. 读取当天胶囊
+        # 1. 读取当天胶囊 + 当天事件
         today_capsules = self._load_today_capsules()
-        
-        # 2. 情绪主题归纳
-        themes = self._merge_themes(today_capsules)
+        today_events = self._load_today_events()
+
+        # 2. 情绪主题归纳（结合胶囊和事件）
+        themes = self._merge_themes(today_capsules, today_events)
         
         # 3. 信念更新
         beliefs_updated = self._update_beliefs(today_capsules, themes)
@@ -169,7 +170,30 @@ class DreamProcess:
         
         return today_capsules
     
-    def _merge_themes(self, capsules: List[Dict]) -> List[str]:
+    def _load_today_events(self) -> List[Dict]:
+        """从 daily_events.jsonl 加载今天的事件"""
+        from pathlib import Path
+        events_file = DATA_DIR / "daily_events.jsonl"
+        today = datetime.now().strftime("%Y-%m-%d")
+        events = []
+        if events_file.exists():
+            try:
+                with open(events_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            event = json.loads(line)
+                            if event.get("date") == today:
+                                events.append(event)
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+        return events
+
+    def _merge_themes(self, capsules: List[Dict], events: List[Dict] = None) -> List[str]:
         """
         合并相似情绪，归纳主题
         
@@ -213,7 +237,20 @@ class DreamProcess:
                 if intensity >= 0.8:
                     summary = group[0].get("content", {}).get("summary", "")
                     themes.append(f"高强度情绪事件: {summary[:20]}")
-        
+
+        # 结合每日事件归纳主题
+        if events:
+            care_events = [e for e in events if e.get("event_type") == "care_sent"]
+            desire_events = [e for e in events if e.get("event_type") == "desire_triggered"]
+            emotion_spikes = [e for e in events if e.get("event_type") == "emotion_spike"]
+            if care_events:
+                themes.append("今天我主动向用户表达了关心（关系深化事件）")
+            if desire_events:
+                top_desire = desire_events[0].get("description", "")
+                themes.append(f"产生了重要欲望: {top_desire}")
+            if emotion_spikes:
+                themes.append("今天检测到用户情绪波动，需要关注")
+
         return list(set(themes))
     
     def _update_beliefs(

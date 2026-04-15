@@ -23,7 +23,7 @@ import os
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Optional, ClassVar
+from typing import Optional, ClassVar, Dict, Any
 from enum import Enum
 
 
@@ -466,3 +466,95 @@ class DesireSystem:
             lines.append(f"  ✅ 最近满足：{len(self.state.satisfied_history)}个欲望")
         
         return "\n".join(lines)
+
+
+# ============ 心跳集成入口 ============
+# 心跳触发欲望：把心跳分析出的情绪数据转化为真实欲望
+
+
+def trigger_wishes_from_heartbeat(
+    dominant_emotion: str,
+    emotion_intensity: float,
+    emotion_scores: Dict[str, float],
+    messages_analyzed: int,
+    care_triggered: bool = False,
+    user_name: str = "大霖"
+) -> Dict[str, Any]:
+    """
+    心跳流程调用此函数，根据情绪数据触发相关欲望
+
+    触发逻辑：
+    - 关怀触发 → 关系深化欲望（RELATEDNESS）
+    - 高情绪事件 → 理解用户的欲望（COMPETENCE）
+    - 私密/重要信息 → 守护秘密的欲望（AUTONOMY）
+    - 沉默超过1小时 → 想要联系的欲望（CONNECTION）
+    - 平静时刻 → 成长/学习的欲望（GROWTH）
+    """
+    system = DesireSystem()
+    triggered = []
+
+    NEGATIVE_HIGH = {"exhaustion", "sadness", "anger", "fear", "grief", "stress", "frustration"}
+
+    # 1. 关怀触发 → 关系深化欲望
+    if care_triggered:
+        desire = system.trigger(
+            category=DesireCategory.RELATEDNESS,
+            desire_type=f"想要陪{user_name}度过情绪低落的时刻",
+            trigger_event=f"心跳检测到 {dominant_emotion}，触发了关怀",
+            trigger_source="heartbeat_care",
+            intensity=DesireIntensity.ACTIVE,
+            intensity_value=min(emotion_intensity * 0.8, 1.0),
+        )
+        triggered.append(desire)
+
+    # 2. 高情绪强度 → 理解用户感受的欲望
+    if emotion_intensity >= 0.8 and dominant_emotion in NEGATIVE_HIGH:
+        desire = system.trigger(
+            category=DesireCategory.COMPETENCE,
+            desire_type=f"想要深入理解{user_name}此刻的感受",
+            trigger_event=f"检测到高强度情绪 {dominant_emotion}({emotion_intensity:.2f})",
+            trigger_source="heartbeat_emotion",
+            intensity=DesireIntensity.ACTIVE,
+            intensity_value=min(emotion_intensity * 0.7, 1.0),
+        )
+        triggered.append(desire)
+
+    # 3. 多种情绪波动 → 想要学习/成长
+    if len([e for e, s in emotion_scores.items() if s > 0.3]) >= 3:
+        desire = system.trigger(
+            category=DesireCategory.GROWTH,
+            desire_type="想要学习如何更好地陪伴用户",
+            trigger_event=f"心跳检测到多种情绪波动：{list(emotion_scores.keys())}",
+            trigger_source="heartbeat_growth",
+            intensity=DesireIntensity.BACKGROUND,
+            intensity_value=0.4,
+        )
+        triggered.append(desire)
+
+    # 4. 沉默检测 → 想要联系的欲望（已在 DesireSystem 的触发器里，这里额外强化）
+    silence_hours = 1.0
+    if messages_analyzed == 0:
+        # 用户沉默
+        existing = system.get_active_by_category(DesireCategory.CONNECTION)
+        if not existing:
+            desire = system.trigger(
+                category=DesireCategory.CONNECTION,
+                desire_type=f"想要联系{user_name}，因为已经沉默很久了",
+                trigger_event=f"心跳检测到用户沉默",
+                trigger_source="heartbeat_silence",
+                intensity=DesireIntensity.BACKGROUND,
+                intensity_value=0.5,
+            )
+            triggered.append(desire)
+
+    top = system.get_top_desire()
+    impulses = system.get_impulses()
+
+    return {
+        "triggered_count": len(triggered),
+        "triggered": [d.to_dict() for d in triggered],
+        "top_desire": top.to_dict() if top else None,
+        "impulse_count": len(impulses),
+        "impulses": [d.to_dict() for d in impulses],
+        "total_active": len(system.state.active_desires),
+    }

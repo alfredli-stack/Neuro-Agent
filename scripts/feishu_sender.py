@@ -272,6 +272,18 @@ class NeuroAgentFeishuSender:
                 "care_triggered": False,
             }
 
+        # ─── 发送前情景预演 ───
+        dominant = report.get("dominant_emotion", "neutral")
+        intensity = report.get("dominant_intensity", 0.0)
+        try:
+            from prefrontal.preview_engine import preview_before_action
+            preview = preview_before_action("send_care", dominant, intensity)
+            if preview.get("recommended_action") != "主动关怀":
+                print(f"[feishu_sender] ⚠️ 预演结果：{preview.get('recommended_action')}，跳过发送")
+                return {"success": False, "error": "情景预演建议不发送", "preview": preview}
+        except Exception as e:
+            print(f"[feishu_sender] ⚠️ 预演异常: {e}")
+
         # 发送关怀消息
         result = self.client.send_text(
             receive_id=self.user_open_id,
@@ -335,6 +347,16 @@ class NeuroAgentFeishuSender:
                     message = message.replace("你", f"{user_name}阁下").replace("您", f"{user_name}阁下")
                 else:
                     message = message.replace("你", user_name).replace("您", user_name)
+
+        # ─── 发送前情景预演 ───
+        try:
+            from prefrontal.preview_engine import preview_before_action
+            preview = preview_before_action("send_yearning", "connection", yearning_level)
+            if preview.get("recommended_action") == "安静陪伴":
+                print(f"[feishu_sender] ⚠️ 预演结果：{preview.get('recommended_action')}，跳过发送")
+                return {"success": False, "error": "情景预演建议不发送", "preview": preview}
+        except Exception as e:
+            print(f"[feishu_sender] ⚠️ 预演异常: {e}")
 
         result = self.client.send_text(
             receive_id=self.user_open_id,

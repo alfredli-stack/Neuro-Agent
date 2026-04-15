@@ -904,6 +904,27 @@ def main():
     except Exception as e:
         print(f"  ⚠️ 思念检查异常: {e}")
 
+    # ========== 三大系统集成：愿望系统 + 情景预演 + 事件记录 ==========
+    try:
+        from scripts.heartbeat_integration import run_heartbeat_integration
+        from scripts.heartbeat_processor import _get_user_name_from_user_md
+        user_name = _get_user_name_from_user_md() or "大霖"
+        integration = run_heartbeat_integration(report, user_name=user_name)
+        # 愿望系统结果
+        if integration.get("desire_system") and not integration["desire_system"].get("error"):
+            ds = integration["desire_system"]
+            if ds.get("impulse_count", 0) > 0:
+                top = ds.get("top_desire", {})
+                print(f"  ⚡ 愿望触发: {top.get('desire_type', 'N/A')} ({top.get('intensity_value', 0):.0%})", flush=True)
+        # 情景预演结果
+        if integration.get("scenario_preview") and not integration["scenario_preview"].get("error"):
+            sp = integration["scenario_preview"]
+            print(f"  🎭 情景预演: 「{sp.get('recommended_action', 'N/A')}」— {sp.get('reasoning', '')[:40]}...", flush=True)
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"  ⚠️ 集成层异常: {e}")
+
     print(f"  报告: {OUT_FILE}", flush=True)
 
     return report
