@@ -304,67 +304,161 @@ def _save_heartbeat_state(state: Dict[str, Any]) -> None:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
+# ============ 动态关怀状态 ============
+DYNAMIC_CARE_STATE_FILE = DATA_DIR / "dynamic_care_state.json"
+
+
+def _load_dynamic_care_state() -> Dict[str, Any]:
+    if DYNAMIC_CARE_STATE_FILE.exists():
+        try:
+            with open(DYNAMIC_CARE_STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "last_care_sent": None,
+        "rejected_emotions": {},
+        "history": [],
+        "last_active": None,
+        "consecutive_negative": 0,
+    }
+
+
+def _save_dynamic_care_state(state: Dict[str, Any]) -> None:
+    DYNAMIC_CARE_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(DYNAMIC_CARE_STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def _record_user_activity():
+    """当检测到用户有活跃对话时调用"""
+    state = _load_dynamic_care_state()
+    state["last_active"] = datetime.now().isoformat()
+    state["consecutive_negative"] = 0
+    _save_dynamic_care_state(state)
+
+
+def _record_negative_emotion(emotion: str, intensity: float):
+    """记录一次负向情绪"""
+    state = _load_dynamic_care_state()
+    now = datetime.now()
+    state["history"].append({
+        "timestamp": now.isoformat(),
+        "emotion": emotion,
+        "intensity": intensity,
+    })
+    if len(state["history"]) > 10:
+        state["history"] = state["history"][-10:]
+    state["consecutive_negative"] = state.get("consecutive_negative", 0) + 1
+    _save_dynamic_care_state(state)
+
+
+def _record_care_sent_for_dynamic(emotion: str):
+    """记录关怀已发送"""
+    state = _load_dynamic_care_state()
+    state["last_care_sent"] = datetime.now().isoformat()
+    state["history"] = []
+    state["consecutive_negative"] = 0
+    _save_dynamic_care_state(state)
+
+
+def _record_rejection(emotion: str):
+    """记录用户拒绝关怀（触发4小时冷却）"""
+    state = _load_dynamic_care_state()
+    state["rejected_emotions"][emotion] = datetime.now().isoformat()
+    cutoff = datetime.now() - timedelta(hours=2)
+    state["rejected_emotions"] = {
+        e: t for e, t in state["rejected_emotions"].items()
+        if datetime.fromisoformat(t) > cutoff
+    }
+    _save_dynamic_care_state(state)
+
+
+def _check_online_status() -> bool:
+    """检查用户当前是否在线（最近30分钟有活动）"""
+    state = _load_dynamic_care_state()
+    if not state.get("last_active"):
+        return False
+    try:
+        last = datetime.fromisoformat(state["last_active"])
+        return (datetime.now() - last).total_seconds() < 1800
+    except Exception:
+        return False
+
+
 def should_trigger_care(dominant_emotion: str, intensity: float) -> bool:
     """
-    判断是否触发主动关怀
-    
-    触发条件（满足其一）：
-    1. 单次强度 > 2.5（极高强度）
-    2. 连续2次心跳同一种负向情绪 + 强度 > 1.5
-    3. 连续3次心跳有2次负向情绪 + 平均强度 > 1.5
+    动态关怀判断（完整版）
+
+    触发条件（必须同时满足）：
+    1. 沉默检测：用户沉默 ≥ 30 分钟
+    2. 情绪强度 ≥ 1.5（高敏感）
+    3. 连续 2 次心跳同种负向情绪 或 单次强度 ≥ 2.5
+    4. 该情绪类型不在冷却期（被拒绝后 4 小时）
+    5. 距离上次关怀 ≥ 2 小时
     """
     NEGATIVE = {"exhaustion", "sadness", "fear", "anger", "grief", "stress", "frustration"}
+    SILENCE_THRESHOLD = 30
+    COOLING_HOURS = 4
+    MIN_INTERVAL_HOURS = 2
+
+    state = _load_dynamic_care_state()
+
+    # 冷却过滤
+    rejected = state.get("rejected_emotions", {})
+    if dominant_emotion in rejected:
+        try:
+            reject_time = datetime.fromisoformat(rejected[dominant_emotion])
+            hours_since_reject = (datetime.now() - reject_time).total_seconds() / 3600
+            if hours_since_reject < COOLING_HOURS:
+                return False
+        except Exception:
+            pass
+
+    # 沉默检测：用户还在活动，不打扰
+    last_active = state.get("last_active")
+    silence_minutes = 999
+    if last_active:
+        try:
+            silence_minutes = (datetime.now() - datetime.fromisoformat(last_active)).total_seconds() / 60
+        except Exception:
+            silence_minutes = 999
+
+    if silence_minutes < SILENCE_THRESHOLD:
+        return False
+
+    # 趋势判断：必须是负向情绪
+    if dominant_emotion not in NEGATIVE:
+        return False
 
     if intensity > 2.5:
-        return True
-
-    state = _load_heartbeat_state()
-    history = state.get("history", [])
-    last_care = state.get("last_care_sent")
-
-    if dominant_emotion in NEGATIVE and intensity > 1.5:
-        # 检查最近2次
-        if len(history) >= 1:
-            last = history[-1]
-            if last.get("dominant_emotion") == dominant_emotion and last.get("intensity", 0) > 1.0:
-                # 检查距上次关怀
-                if last_care:
-                    try:
-                        last_time = datetime.fromisoformat(last_care)
-                        hours_since = (datetime.now() - last_time).total_seconds() / 3600
-                        if hours_since < 1.5:
-                            return False
-                    except Exception:
-                        pass
-                return True
-
-    return False
-
-
-def get_care_message(emotion: str, intensity: float) -> str:
-    """根据情绪和当前时间返回关怀话术（支持个性化）"""
-    hour = datetime.now().hour
-    is_late_night = hour >= 22 or hour < 8
-
-    if is_late_night and emotion in LATE_NIGHT_CARE:
-        base = LATE_NIGHT_CARE[emotion]
-    elif emotion in CARE_MESSAGES:
-        base = CARE_MESSAGES[emotion]["message"]
+        pass
+    elif intensity < 1.5:
+        return False
     else:
-        base = None
+        consecutive = state.get("consecutive_negative", 0)
+        if consecutive < 2:
+            return False
 
-    # 默认回退
-    if base is None:
-        if intensity > 2.5:
-            soul = get_user_identity()
-            name = soul.get("name", "主人")
-            return f"{name}，你还好吗？需要我帮什么吗？ 💙"
-        return None  # 不需要关怀
+    # 最小发送间隔
+    last_care = state.get("last_care_sent")
+    if last_care:
+        try:
+            hours_since = (datetime.now() - datetime.fromisoformat(last_care)).total_seconds() / 3600
+            if hours_since < MIN_INTERVAL_HOURS:
+                return False
+        except Exception:
+            pass
 
-    # 应用个性化（根据 SOUL.md 设定）
-    return _personalize_care_message(emotion, intensity, base)
+    return True
 
 
+def record_care_sent() -> None:
+    """兼容旧接口，同时更新新旧两个状态文件"""
+    state = _load_heartbeat_state()
+    state["last_care_sent"] = datetime.now().isoformat()
+    _save_heartbeat_state(state)
+    _record_care_sent_for_dynamic("unknown")
 def record_heartbeat(emotion: str, intensity: float) -> None:
     state = _load_heartbeat_state()
     history = state.get("history", [])
@@ -377,12 +471,11 @@ def record_heartbeat(emotion: str, intensity: float) -> None:
         history = history[-5:]
     state["history"] = history
     _save_heartbeat_state(state)
+    # 同时更新动态关怀状态
+    NEGATIVE = {"exhaustion", "sadness", "fear", "anger", "grief", "stress", "frustration"}
+    if emotion in NEGATIVE and intensity >= 1.5:
+        _record_negative_emotion(emotion, intensity)
 
-
-def record_care_sent() -> None:
-    state = _load_heartbeat_state()
-    state["last_care_sent"] = datetime.now().isoformat()
-    _save_heartbeat_state(state)
 
 
 # ============ 社会化学习触发 ============
@@ -540,7 +633,7 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
         if not recent:
             report["status"] = "no_messages"
 
-            # ========== 用户沉默 → 触发社会化学习 ==========
+            # ========== 用户沉默 → 触发社会化学习 + 更新沉默标记 ==========
             if should_trigger_social_learning():
                 social_result = run_social_learning()
                 report["social_learning_triggered"] = True
@@ -551,8 +644,9 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
 
             return report
 
-        # 有对话 → 重置沉默计数
+        # 有对话 → 重置沉默计数 + 标记用户活跃
         reset_idle_counter()
+        _record_user_activity()
 
         report["messages_analyzed"] = len(recent)
 
