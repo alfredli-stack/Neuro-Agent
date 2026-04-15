@@ -92,6 +92,38 @@ LATE_NIGHT_CARE: Dict[str, str] = {
 }
 
 
+# ============ USER.md 读取（获取使用者名字）===========
+def _get_user_name_from_user_md() -> str | None:
+    """从 USER.md 读取使用者的称呼（优先"大霖"，其次"李霖"）"""
+    USER_FILE = Path.home() / ".openclaw" / "workspace" / "USER.md"
+    if not USER_FILE.exists():
+        return None
+    try:
+        content = USER_FILE.read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+    # 优先取 "What to call them"（如"大霖"）
+    for line in content.split("\n"):
+        if "What to call them" in line and "Name" not in line:
+            try:
+                name = line.split(":**")[1].strip().strip("*").strip()
+                if name:
+                    return name
+            except Exception:
+                pass
+    # 其次取 "Name"（如"李霖"）
+    for line in content.split("\n"):
+        if line.strip().startswith("- **Name:**"):
+            try:
+                name = line.split(":**")[1].strip().strip("*").strip()
+                if name:
+                    return name
+            except Exception:
+                pass
+    return None
+
+
 # ============ SOUL.md 读取与个性化 ============
 SOUL_CACHE_FILE = DATA_DIR / "soul_cache.json"
 
@@ -219,33 +251,36 @@ def get_user_identity() -> Dict[str, Any]:
 
 def _personalize_care_message(emotion: str, intensity: float, base_message: str) -> str:
     """
-    根据使用者的 SOUL.md 设定，个性化关怀消息
-    - 名字称呼（取代"主人"）
-    - 语气风格调整
+    根据使用者的身份设定，个性化关怀消息
+    - 优先级：USER.md称呼 > SOUL.md AI名字 > 默认"主人"
+    - 语气风格调整（formal / casual / intimate）
     """
-    soul = get_user_identity()
-    if not soul or not soul.get("name"):
+    # 优先从 USER.md 获取使用者称呼
+    user_name = _get_user_name_from_user_md()
+
+    # 如果 USER.md 没有，再从 SOUL.md 获取 AI 名字
+    if not user_name:
+        soul = get_user_identity()
+        if soul.get("name"):
+            user_name = soul["name"]
+    if not user_name:
         return base_message
-
-    name = soul["name"]
-    style = soul.get("style", "formal")
-
-    # 替换称呼
-    if "主人" in base_message:
+    style = "formal"
+    if user_name:
+        soul = get_user_identity()
+        style = soul.get("style", "formal") if soul else "formal"
+    if "主人" in base_message or "你" in base_message:
         if style == "formal":
-            base_message = base_message.replace("主人", f"{name}阁下")
+            base_message = base_message.replace("主人", f"{user_name}阁下").replace("你", user_name)
         elif style == "casual":
-            base_message = base_message.replace("主人", name)
+            base_message = base_message.replace("主人", user_name).replace("你", user_name)
         else:
-            base_message = base_message.replace("主人", f"{name}")
-
-    # 语气微调（formal 风格更绅士）
+            base_message = base_message.replace("主人", user_name).replace("你", user_name)
     if style == "formal":
         if "是不是" in base_message:
             base_message = base_message.replace("是不是", "是否")
         if "要不要" in base_message:
             base_message = base_message.replace("要不要", "是否需要")
-
     return base_message
 
 
