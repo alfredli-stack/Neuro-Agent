@@ -1,0 +1,74 @@
+"""
+config.yaml
+============
+Neuro-Agent 配置文件
+
+复制为 config.yaml 并填入你的 API Key
+"""
+
+# LLM 配置
+llm:
+  # 默认提供商: openai | claude
+  default_provider: openai
+  
+  # 是否启用 fallback（主提供商失败时自动切换）
+  enable_fallback: true
+  
+  # OpenAI 配置
+  openai:
+    api_key: ""  # 你的 OpenAI API Key
+    default_model: gpt-4o-mini  # 快且便宜，适合高频调用
+    fallback_model: gpt-4o      # 质量更高
+  
+  # Claude (Anthropic) 配置
+  claude:
+    api_key: ""  # 你的 Anthropic API Key
+    default_model: claude-3-haiku-20240307  # 快且便宜
+    fallback_model: claude-3-sonnet-20240229  # 质量更高
+
+# 共情生成器配置
+empathy:
+  # 温度参数（创造性程度）
+  temperature: 0.8
+  
+  # 最大 token 数
+  max_tokens: 150
+  
+  # 是否启用 LLM（false 则 fallback 到规则模板）
+  use_llm: true
+
+# 心跳处理器配置
+heartbeat:
+  # 分析周期（小时）
+  period_hours: 2
+  
+  # 关怀触发阈值
+  care_threshold:
+    # 连续触发：连续 N 次心跳
+    consecutive_count: 2
+    # 强度阈值
+    intensity_threshold: 1.5
+    # 极高强度（单次触发）
+    high_intensity: 2.5
+  
+  # 关怀冷却时间（小时）
+  care_cooldown_hours: 2
+
+# 记忆配置
+memory:
+  # 短期记忆保留条数
+  short_term_capacity: 50
+  
+  # 向量检索返回数量
+  vector_search_limit: 5
+  
+  # 情绪胶囊强度阈值（超过此值才生成胶囊）
+  capsule_intensity_threshold: 0.6
+
+# 关系阶段配置
+relationship:
+  # 自动升级阈值（累计正向互动次数）
+  stage_thresholds:
+    initial_to_familiar: 10
+    familiar_to_companion: 30
+    companion_to_soul: 100
