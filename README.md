@@ -2,7 +2,7 @@
 
 > 类脑分区的情感智能 Agent，你的数字灵魂伴侣。
 
-[![Neuro-α](https://img.shields.io/badge/Neuro-α-v5.5-blue.svg)](https://github.com/alfredli-stack/Neuro-α)
+[![Neuro-α](https://img.shields.io/badge/Neuro-α-α-blue.svg)](https://github.com/alfredli-stack/Neuro-α)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -94,11 +94,11 @@ Neuro-α/
 
 | 版本 | 日期 | 核心特性 |
 |------|------|---------|
-| v5.5 | 2026-04-17 | 最新版本：MemPalace 记忆系统 + 完整自动化 |
-| v5.2 | 2026-04-14 | 情景预演 + 愿望系统 + 自我叙事 |
-| v5.1 | 2026-04-14 | 社会化学习 + 思念系统 |
-| v5.0 | 2026-04-14 | Agent 自我情绪感知 |
-| v4.0 | 2026-04-12 | 自我意识觉醒 |
+| α | 2026-04-17 | 最新版本：MemPalace 记忆系统 + 完整自动化 |
+| α | 2026-04-14 | 情景预演 + 愿望系统 + 自我叙事 |
+| α | 2026-04-14 | 社会化学习 + 思念系统 |
+| α | 2026-04-14 | Agent 自我情绪感知 |
+| α | 2026-04-12 | 自我意识觉醒 |
 
 ---
 
