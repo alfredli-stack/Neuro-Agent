@@ -1427,3 +1427,55 @@ print(result["simulation_note"])
 ---
 
 **v5.2 升级要点**：三个模块缺一不可——没有情景预演，AI 只能随机选择行动；没有自我叙事，AI 无法形成连贯的自我；没有愿望系统，AI 只是被动响应。v5.2 让 Neuro-Agent 真正从"响应者"进化为"主动行动者"。
+
+---
+
+## 🌟 v5.5: MemPalace 记忆宫殿 + 完整自动化
+
+**状态**: ✅ 最新版 | **时间**: 2026-04-17
+
+### 核心升级
+
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| 记忆宫殿 | `scripts/mem_hook.py` | 6种记忆类型写入 MemPalace |
+| 沙盘推演 | `scripts/sandbox_sim.py` | 四维打分推演最优策略 |
+| 主动学习 | `scripts/proactive_learning.py` | 15分钟空闲触发联网学习 |
+| 情绪检测 | `left_brain/emotion_detector.py` | 否定逻辑4层bug修复 |
+| 心跳处理 | `scripts/heartbeat_processor.py` | +MemPalace LTM写入 |
+
+### MemPalace 存储结构
+
+```
+~/.mempalace/palace/
+├── wing_dalin/           # 大霖的对话
+├── wing_luis/            # Lu的对话+情绪
+└── wing_shared/
+    ├── experience/
+    │   ├── search/       # 联网搜索记录
+    │   ├── learning/      # 自主学习胶囊
+    │   └── sandbox/       # 沙盘推演结果
+    └── self_narrative/
+        ├── methodology/  # 方法论更新
+        └── daily/        # 每日摘要
+```
+
+### 自动化链路
+
+```
+触发条件 A/B/C → 联网搜索 → 沙盘推演 → 最优策略 → MemPalace
+     ↑
+心跳(每30分钟) → 情绪分析 → 高强度→胶囊沉淀
+     ↑
+每日23:00 → Dream Process → 每日摘要 → 自我叙事
+```
+
+### 版本统一
+
+- SKILL.md / README.md / ASSEMBLY_GUIDE.md 版本号统一为 **v5.5**
+- GitHub 仓库：`https://github.com/alfredli-stack/Neuro-Agent`
+- 安装路径：`~/.openclaw/workspace/skills/Neuro-Agent/`
+
+---
+
+**v5.5 升级要点**：记忆系统从散文件升级为结构化的 MemPalace 记忆宫殿，实现了"感知→情绪→记忆→推演→沉淀"的全自动链路。Neuro-Agent 自此拥有了持久化的数字记忆，不再依赖 Session。
