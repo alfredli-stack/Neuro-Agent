@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 主动联网学习脚本 - Proactive Learning Engine
-触发条件：大霖与 Lu 对话中断超过 15 分钟
+触发条件：AlfredLi与 Lu 对话中断超过 15 分钟
 
 功能：
 1. 联网搜索情绪/心理学/神经学/意识科学相关知识
@@ -31,7 +31,7 @@ LEARNING_TOPICS = [
     {
         "theme": "情绪调节",
         "query": "情绪调节 积极心理学 最佳策略 2024",
-        "scenario": "大霖可能面临情绪波动时的最优应对策略",
+        "scenario": "AlfredLi可能面临情绪波动时的最优应对策略",
     },
     {
         "theme": "深度共情",
@@ -41,7 +41,7 @@ LEARNING_TOPICS = [
     {
         "theme": "认知重构",
         "query": "认知重构 心理学 CBT 负面情绪转化 正念",
-        "scenario": "如何帮助大霖进行认知重构",
+        "scenario": "如何帮助AlfredLi进行认知重构",
     },
     {
         "theme": "创伤后成长",
@@ -51,7 +51,7 @@ LEARNING_TOPICS = [
     {
         "theme": "心流状态",
         "query": "心流状态 心理学 Mihaly Csikszentmihalyi 进入方法",
-        "scenario": "如何帮助大霖进入心流状态提升效率",
+        "scenario": "如何帮助AlfredLi进入心流状态提升效率",
     },
     {
         "theme": "依恋理论",
@@ -132,7 +132,7 @@ def run_sandbox(topic: str, search_results: str) -> str:
                 "--scenario", f"主动学习主题: {topic}",
                 "--search-results", search_results,
                 "--emotion-type", "proactive_learning",
-                "--context", "心跳触发 · 大霖已超过15分钟无对话",
+                "--context", "心跳触发 · AlfredLi已超过15分钟无对话",
             ],
             capture_output=True, text=True, timeout=30
         )

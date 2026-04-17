@@ -19,7 +19,7 @@ Neuro-α × MemPalace 融合模块
     
     # 检索记忆
     retriever = MemoryRetriever()
-    results = retriever.search("天气", who="大霖")
+    results = retriever.search("天气", who="AlfredLi")
 """
 
 from .memory_unit import MemoryUnit, LearningReport, create_memory_unit
@@ -72,4 +72,4 @@ __all__ = [
 ]
 
 __version__ = "2.0.0"
-__author__ = "Luis & 大霖"
+__author__ = "Luis & AlfredLi"

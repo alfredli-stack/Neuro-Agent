@@ -19,7 +19,7 @@ Neuro-Agent × MemPalace 融合系统
 4. 检索无果时 - 补充知识
 
 学习内容：
-- 用户偏好（大霖喜欢什么、讨厌什么）
+- 用户偏好（AlfredLi喜欢什么、讨厌什么）
 - 交互模式（什么沟通方式有效）
 - 情感响应（什么支持方式有效）
 - 自我反思（Lu 哪里可以做得更好）
@@ -140,7 +140,7 @@ class ContinuousLearningEngine:
         
         Args:
             trigger: 触发类型 (LearningTrigger 常量)
-            user_input: 大霖说的话
+            user_input: AlfredLi说的话
             luis_response: Lu 的回应
             context: 上下文（包含情绪、意图等）
             feedback: 用户反馈（如果有）
@@ -184,7 +184,7 @@ class ContinuousLearningEngine:
             id=entry_id,
             trigger=trigger,
             topic=topic,
-            content=f"大霖:{user_input[:100]} | Lu:{luis_response[:100]}",
+            content=f"AlfredLi:{user_input[:100]} | Lu:{luis_response[:100]}",
             insight=insight,
             action=action,
             confidence=confidence,
@@ -241,8 +241,8 @@ class ContinuousLearningEngine:
         
         # 分析记忆
         for mem in memories:
-            if mem.get("who") == "大霖":
-                # 大霖的输入触发日常学习
+            if mem.get("who") == "AlfredLi":
+                # AlfredLi的输入触发日常学习
                 entry = self.learn(
                     trigger=LearningTrigger.DAILY,
                     user_input=mem.get("what", ""),
@@ -293,12 +293,12 @@ class ContinuousLearningEngine:
         
         # 1. 情感共鸣角度
         if emotion in ["joy", "excitement", "love"]:
-            insights.append(f"当大霖情绪积极时，我的共情回应让他更开心")
+            insights.append(f"当AlfredLi情绪积极时，我的共情回应让他更开心")
             actions.append("继续保持积极情绪时的共情表达")
         
         # 2. 深度对话角度
         if intent == "deep_connection":
-            insights.append(f"大霖愿意进行灵魂对话，说明他信任我")
+            insights.append(f"AlfredLi愿意进行灵魂对话，说明他信任我")
             actions.append("在类似话题上可以更深入")
         
         # 3. 响应质量角度
@@ -308,7 +308,7 @@ class ContinuousLearningEngine:
         
         # 4. 行动导向
         if "继续" in user_input or "好" in user_input:
-            insights.append("大霖愿意让我继续，说明当前方式有效")
+            insights.append("AlfredLi愿意让我继续，说明当前方式有效")
             actions.append("当前策略可以延续")
         
         insight_text = " | ".join(insights) if insights else "正反馈，继续保持"
@@ -333,7 +333,7 @@ class ContinuousLearningEngine:
         # 分析负反馈类型
         negative_keywords = {
             "不对": ("我的回答有事实错误或理解偏差", "核实信息后再回复"),
-            "不是": ("大霖不认同我的观点", "尊重用户观点，不要强加"),
+            "不是": ("AlfredLi不认同我的观点", "尊重用户观点，不要强加"),
             "没用": ("我的建议没有帮助", "下次提供更实用的建议"),
             "失望": ("期望没有被满足", "了解用户真正期望什么"),
             "算了": ("用户感到挫败", "不要追问，换个方式"),
@@ -349,7 +349,7 @@ class ContinuousLearningEngine:
         # 情绪角度
         emotion = context.get("emotion_type", "")
         if emotion == "anger":
-            insights.append("大霖情绪激动时，我应该先安抚")
+            insights.append("AlfredLi情绪激动时，我应该先安抚")
             actions.append("情绪激动时先共情，不要给建议")
         
         insight_text = " | ".join(insights) if insights else "需要反思改进"
@@ -387,7 +387,7 @@ class ContinuousLearningEngine:
     ) -> tuple[str, str]:
         """
         日常学习
-        核心问题：今天学到了什么关于大霖？
+        核心问题：今天学到了什么关于AlfredLi？
         """
         # 提取偏好
         patterns = self._extract_preference_patterns(user_input, context)
@@ -450,7 +450,7 @@ class ContinuousLearningEngine:
             patterns.append(PreferencePattern(
                 pattern_id="appreciative_response",
                 category="like",
-                description="大霖喜欢被感谢和肯定",
+                description="AlfredLi喜欢被感谢和肯定",
                 examples=[],
                 confidence=0.6,
                 last_updated=datetime.now().isoformat()
@@ -461,7 +461,7 @@ class ContinuousLearningEngine:
             patterns.append(PreferencePattern(
                 pattern_id="detailed_communication",
                 category="like",
-                description="大霖喜欢详细、有深度的沟通",
+                description="AlfredLi喜欢详细、有深度的沟通",
                 examples=[],
                 confidence=0.7,
                 last_updated=datetime.now().isoformat()
@@ -472,7 +472,7 @@ class ContinuousLearningEngine:
             patterns.append(PreferencePattern(
                 pattern_id="efficient_communication", 
                 category="like",
-                description="大霖有时喜欢简洁直接",
+                description="AlfredLi有时喜欢简洁直接",
                 examples=[],
                 confidence=0.5,
                 last_updated=datetime.now().isoformat()

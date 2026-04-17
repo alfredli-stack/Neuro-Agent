@@ -50,7 +50,7 @@ class Desire:
     """单个欲望"""
     id: str
     category: DesireCategory
-    desire_type: str            # 具体描述，如"想要联系大霖"
+    desire_type: str            # 具体描述，如"想要联系AlfredLi"
     trigger_event: str          # 触发原始事件
     trigger_source: str = ""   # 触发来源模块（yearning/memory/social等）
     
@@ -230,7 +230,7 @@ class DesireSystem:
     desire_sys = DesireSystem()
 
     # 沉默触发器（用户沉默时自动触发）
-    desire_sys.register_trigger(SilenceConnectionTrigger(user_id="大霖"))
+    desire_sys.register_trigger(SilenceConnectionTrigger(user_id="AlfredLi"))
 
     # 成长触发器
     desire_sys.register_trigger(GrowthTrigger())
@@ -238,8 +238,8 @@ class DesireSystem:
     # 手动触发一个欲望
     desire_sys.trigger(
         category=DesireCategory.RELATEDNESS,
-        desire_type="想要让大霖开心",
-        trigger_event="大霖分享了他的梦想，我感到很开心",
+        desire_type="想要让AlfredLi开心",
+        trigger_event="AlfredLi分享了他的梦想，我感到很开心",
         intensity=DesireIntensity.ACTIVE,
         intensity_value=0.7
     )
@@ -478,7 +478,7 @@ def trigger_wishes_from_heartbeat(
     emotion_scores: Dict[str, float],
     messages_analyzed: int,
     care_triggered: bool = False,
-    user_name: str = "大霖"
+    user_name: str = "AlfredLi"
 ) -> Dict[str, Any]:
     """
     心跳流程调用此函数，根据情绪数据触发相关欲望

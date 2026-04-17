@@ -103,8 +103,8 @@ class SelfNarrativeGenerator:
         if not memories:
             return None
         
-        # 分离大霖和 Lu 的记忆
-        dalin_memories = [m for m in memories if m.get("who") == "大霖"]
+        # 分离AlfredLi和 Lu 的记忆
+        dalin_memories = [m for m in memories if m.get("who") == "AlfredLi"]
         luis_memories = [m for m in memories if m.get("who") == "Lu"]
         
         # 提取关键事件（按情绪强度排序）
@@ -259,7 +259,7 @@ class SelfNarrativeGenerator:
         parts = []
         parts.append(f"# {date_formatted} 自我叙事\n")
         parts.append(f"---今日概览---\n")
-        parts.append(f"大霖说了 {dalin_count} 句话, Lu 回应了 {luis_count} 次\n")
+        parts.append(f"AlfredLi说了 {dalin_count} 句话, Lu 回应了 {luis_count} 次\n")
         
         if key_events:
             parts.append(f"\n---关键事件---\n")

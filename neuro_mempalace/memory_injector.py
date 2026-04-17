@@ -43,7 +43,7 @@ class MemoryInjector:
         
         # Wing 路径
         self.wings = {
-            "大霖": self.mempalace_path / "wing_dalin",
+            "AlfredLi": self.mempalace_path / "wing_dalin",
             "Lu": self.mempalace_path / "wing_luis",
             "shared": self.mempalace_path / "wing_shared",
             "experience": self.mempalace_path / "wing_shared" / "experience"
@@ -82,7 +82,7 @@ class MemoryInjector:
         注入记忆单元
         
         Args:
-            who: 谁说的 ("大霖" | "Lu")
+            who: 谁说的 ("AlfredLi" | "Lu")
             what: 说了什么（原文）
             detail: 什么细节触发了情绪
             feeling_label: 情绪名称
@@ -123,9 +123,9 @@ class MemoryInjector:
         thought: Optional[str] = None,
         context: Optional[List[str]] = None
     ) -> str:
-        """快捷方法：注入大霖的话"""
+        """快捷方法：注入AlfredLi的话"""
         return self.inject(
-            who="大霖",
+            who="AlfredLi",
             what=what,
             detail=detail,
             feeling_label=feeling_label,
@@ -175,7 +175,7 @@ class MemoryInjector:
         """
         # 如果有听者反应，也要记录
         if listener_reaction:
-            listener = "大霖" if speaker == "Lu" else "Lu"
+            listener = "AlfredLi" if speaker == "Lu" else "Lu"
             self.inject(
                 who=listener,
                 what=f"[对 {speaker} 的反应] {listener_reaction.get('what', '')}",
@@ -205,7 +205,7 @@ class MemoryInjector:
         self.stats["total_injected"] += 1
         self.stats["last_injected_at"] = datetime.now().isoformat()
         
-        if who == "大霖":
+        if who == "AlfredLi":
             self.stats["dalin_injected"] += 1
         elif who == "Lu":
             self.stats["luis_injected"] += 1

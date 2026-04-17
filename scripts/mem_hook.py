@@ -131,7 +131,7 @@ def inject_exchange():
         u_file = u_path / _make_filename("mem", "dalin")
         u_data = {
             "id": u_file.stem,
-            "who": "大霖",
+            "who": "AlfredLi",
             "what": user_input,
             "detail": f"情绪:{u_emotion} {u_intensity:.1f}",
             "feeling_label": u_emotion,
@@ -141,7 +141,7 @@ def inject_exchange():
         }
         with open(u_file, 'w', encoding='utf-8') as f:
             json.dump(u_data, f, ensure_ascii=False, indent=2)
-        results.append(f"大霖 → {u_file.name}")
+        results.append(f"AlfredLi → {u_file.name}")
 
     if agent_response and len(agent_response) > 3:
         a_path = _date_path(MEMPALACE_PATH, "luis")
@@ -292,10 +292,32 @@ if __name__ == "__main__":
                          help="查看最近 N 条对话记忆")
     parser.add_argument("--recall-experience", type=int, default=0, metavar="N",
                          help="查看最近 N 条经验记录")
+    parser.add_argument("--exchange", type=str,
+                         help="直接写入对话到 MemPalace，格式：{user_input:..., agent_response:...}")
     parser.add_argument("--store", nargs=2, metavar=("USER", "AGENT"),
                          help="保存这对对话到暂存区")
 
     args = parser.parse_args()
+
+    if args.exchange:
+        try:
+            data = json.loads(args.exchange)
+            with open(LAST_EXCHANGE, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "user_input": data.get("user_input", ""),
+                    "agent_response": data.get("agent_response", ""),
+                    "timestamp": _now().isoformat()
+                }, f, ensure_ascii=False)
+            results = inject_exchange()
+            if results:
+                print(f"✅ 对话已写入 MemPalace")
+                for r in results:
+                    print(f"   {r}")
+            else:
+                print("⚠️ 无有效对话")
+        except Exception as e:
+            print(f"⚠️ 对话写入失败: {e}")
+        sys.exit(0)
 
     if args.store:
         save_exchange(args.store[0], args.store[1])

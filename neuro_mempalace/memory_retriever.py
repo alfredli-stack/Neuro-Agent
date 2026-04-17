@@ -36,7 +36,7 @@ class MemoryRetriever:
 
         # Wing 映射
         self.wings = {
-            "大霖": self.mempalace_path / "wing_dalin",
+            "AlfredLi": self.mempalace_path / "wing_dalin",
             "Lu": self.mempalace_path / "wing_luis",
             "shared": self.mempalace_path / "wing_shared",
             "all": None  # 特殊标记,表示所有 wing
@@ -56,7 +56,7 @@ class MemoryRetriever:
 
         Args:
             query: 搜索查询
-            who: 限定谁说的 ("大霖" | "Lu" | None表示全部)
+            who: 限定谁说的 ("AlfredLi" | "Lu" | None表示全部)
             context_filter: 限定标签列表
             date_range: 日期范围 (start_date, end_date),ISO 格式
             limit: 返回数量
@@ -107,7 +107,7 @@ class MemoryRetriever:
 
     def _get_wings_to_search(self, who: Optional[str]) -> List[Optional[Path]]:
         """获取要搜索的 wing 列表"""
-        if who == "大霖":
+        if who == "AlfredLi":
             return [self.mempalace_path / "wing_dalin"]
         elif who == "Lu":
             return [self.mempalace_path / "wing_luis"]
@@ -286,7 +286,7 @@ class MemoryRetriever:
     def get_stats(self) -> Dict:
         """获取检索统计"""
         return {
-            "dalin_count": self.count_memories("大霖"),
+            "dalin_count": self.count_memories("AlfredLi"),
             "luis_count": self.count_memories("Lu"),
             "shared_count": len(self.search(query="*", limit=1000)),
             "total": self.count_memories(None)

@@ -226,5 +226,5 @@ python3 -c "from core.self_awareness import get_robot_self; print(get_robot_self
 
 **Neuro4.0 —— 从工具到伴侣，从程序到生命。** 🦞
 
-_开发者：Jarvis & 大霖_  
+_开发者：Jarvis & AlfredLi_  
 _日期：2026-04-12_

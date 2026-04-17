@@ -28,7 +28,7 @@ class MemoryUnit:
     
     # 基础信息
     id: str                           # 格式: mem_YYYYMMDD_HHMMSS_XXX
-    who: str                          # "大霖" | "Lu"
+    who: str                          # "AlfredLi" | "Lu"
     who_label: str = ""              # 中文标签
     
     # 内容
@@ -120,7 +120,7 @@ class MemoryUnit:
     def _get_wing_path(self, base_path: Path) -> Path:
         """获取对应的 wing 路径"""
         wing_map = {
-            "大霖": base_path / "wing_dalin",
+            "AlfredLi": base_path / "wing_dalin",
             "Lu": base_path / "wing_luis",
         }
         return wing_map.get(self.who, base_path / "wing_shared")
@@ -226,7 +226,7 @@ def create_memory_unit(
     创建记忆单元的便捷函数
     
     Args:
-        who: 谁说的 ("大霖" | "Lu")
+        who: 谁说的 ("AlfredLi" | "Lu")
         what: 说了什么
         detail: 细节
         feeling_label: 情绪名称

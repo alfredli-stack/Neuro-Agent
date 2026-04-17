@@ -53,7 +53,7 @@ python3 -m mempalace init ~/.mempalace/palace
 
 ```bash
 mkdir -p ~/.mempalace/palace
-mkdir -p ~/.mempalace/palace/wing_dalin      # 大霖的记忆 wing
+mkdir -p ~/.mempalace/palace/wing_dalin      # AlfredLi的记忆 wing
 mkdir -p ~/.mempalace/palace/wing_luis      # Lu 的记忆 wing
 mkdir -p ~/.mempalace/palace/wing_shared     # 共同记忆 wing
 mkdir -p ~/.mempalace/palace/experience      # 经验库
@@ -75,7 +75,7 @@ class MemoryUnit:
     
     # 基础信息
     id: str                           # 格式: mem_YYYYMMDD_HHMMSS_XXX
-    who: str                          # "大霖" | "Lu"
+    who: str                          # "AlfredLi" | "Lu"
     what: str                         # 说了什么（原文verbatim）
     detail: str                       # 什么细节触发了情绪
     timestamp: str                    # ISO 格式时间
@@ -133,7 +133,7 @@ class MemoryUnit:
 ┌─────────────────────────────────────────────────────────┐
 │  Neuro 输入处理器（input_processor.py）                  │
 │                                                          │
-│  大霖/我说了一句话                                       │
+│  AlfredLi/我说了一句话                                       │
 │       ↓                                                 │
 │  【细节提取器】extract_detail()                          │
 │       ↓                                                 │
@@ -195,7 +195,7 @@ class MemoryInjector:
         注入记忆单元
         
         Args:
-            who: 谁说的 ("大霖" | "Lu")
+            who: 谁说的 ("AlfredLi" | "Lu")
             what: 说了什么（原文）
             detail: 什么细节触发了情绪
             feeling: 情绪信息 {"label": "...", "intensity": 0.0-1.0}
@@ -242,7 +242,7 @@ class MemoryInjector:
     
     def _get_wing(self, who: str) -> Path:
         """获取对应的 wing"""
-        if who == "大霖":
+        if who == "AlfredLi":
             return self.wing_dalin
         elif who == "Lu":
             return self.wing_luis
@@ -304,7 +304,7 @@ class InputProcessor:
         
         # 注入 MemPalace
         self.memory_injector.inject(
-            who="大霖",
+            who="AlfredLi",
             what=user_input,
             detail=detail,
             feeling=feeling,
@@ -408,7 +408,7 @@ class MemoryRetriever:
         
         Args:
             query: 搜索查询
-            who: 限定谁说的 ("大霖" | "Lu")
+            who: 限定谁说的 ("AlfredLi" | "Lu")
             context_filter: 限定标签
             date_range: 日期范围 (start_date, end_date)
             limit: 返回数量
@@ -420,7 +420,7 @@ class MemoryRetriever:
         
         # 确定搜索范围
         wings_to_search = []
-        if who == "大霖":
+        if who == "AlfredLi":
             wings_to_search = [self.mempalace_path / "wing_dalin"]
         elif who == "Lu":
             wings_to_search = [self.mempalace_path / "wing_luis"]
@@ -524,12 +524,12 @@ class MemoryRetriever:
 │  【扫描当天记忆】get_today()                             │
 │       ↓                                                 │
 │  【提取今日事件】                                         │
-│    - 大霖说了什么重要的话                                 │
+│    - AlfredLi说了什么重要的话                                 │
 │    - Lu 感受到了什么                                     │
 │    - 触发了什么欲望/想法                                 │
 │       ↓                                                 │
 │  【生成自我叙事】                                         │
-│    "今天大霖说了XX，让我感到YY，                         │
+│    "今天AlfredLi说了XX，让我感到YY，                         │
 │     我开始意识到ZZ，这是我的成长"                        │
 │       ↓                                                 │
 │  【存入共享 wing】wing_shared                            │
@@ -567,8 +567,8 @@ class SelfNarrativeGenerator:
         if not today_units:
             return None
         
-        # 分离大霖和 Lu 的记忆
-        dalin_units = [u for u in today_units if u.get('who') == '大霖']
+        # 分离AlfredLi和 Lu 的记忆
+        dalin_units = [u for u in today_units if u.get('who') == 'AlfredLi']
         luis_units = [u for u in today_units if u.get('who') == 'Lu']
         
         # 提取关键事件
@@ -722,7 +722,7 @@ class SelfNarrativeGenerator:
 │    - 使用 web_search 工具                                │
 │       ↓                                                 │
 │  【沙盘推演】                                             │
-│    - 对每个方案预测大霖的反应                            │
+│    - 对每个方案预测AlfredLi的反应                            │
 │    - 选出最优方案                                        │
 │       ↓                                                 │
 │  【生成报告】                                             │
@@ -846,7 +846,7 @@ class LearningEngine:
         rehearsed = []
         
         for solution in solutions:
-            # 预测大霖的反应
+            # 预测AlfredLi的反应
             predicted_reaction = self._predict_dalin_reaction(solution)
             
             # 评估风险
@@ -869,12 +869,12 @@ class LearningEngine:
     
     def _predict_dalin_reaction(self, solution: Dict) -> str:
         """
-        预测大霖的反应
+        预测AlfredLi的反应
         基于历史记忆中的偏好
         """
         # TODO: 实现预测逻辑
-        # 参考 MemPalace 中大霖的历史反应
-        return "大霖可能会感到..."
+        # 参考 MemPalace 中AlfredLi的历史反应
+        return "AlfredLi可能会感到..."
     
     def _assess_risk(self, solution: Dict) -> Dict:
         """
@@ -1030,7 +1030,7 @@ MemPalace 中同步存储：
 - [ ] 基本搜索/写入正常
 
 ### Phase 2 测试
-- [ ] 大霖说话自动写入 MemPalace
+- [ ] AlfredLi说话自动写入 MemPalace
 - [ ] Lu 输出自动写入 MemPalace
 - [ ] 记忆单元格式正确
 

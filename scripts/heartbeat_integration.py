@@ -14,7 +14,7 @@ scripts/heartbeat_integration.py
 
 调用方式：
   from scripts.heartbeat_integration import run_heartbeat_integration
-  result = run_heartbeat_integration(report, user_name="大霖")
+  result = run_heartbeat_integration(report, user_name="AlfredLi")
 """
 
 import sys
@@ -93,7 +93,7 @@ def get_today_events() -> list[Dict]:
 
 def run_heartbeat_integration(
     heartbeat_report: Dict[str, Any],
-    user_name: str = "大霖"
+    user_name: str = "AlfredLi"
 ) -> Dict[str, Any]:
     """
     心跳集成主函数
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         "emotions": {"exhaustion": 1.5, "stress": 0.8},
         "messages_analyzed": 12,
         "care_triggered": True,
-        "care_message": "大霖阁下，是否累了？",
+        "care_message": "AlfredLi阁下，是否累了？",
     }
-    result = run_heartbeat_integration(test_report, user_name="大霖")
+    result = run_heartbeat_integration(test_report, user_name="AlfredLi")
     print(json.dumps(result, ensure_ascii=False, indent=2))

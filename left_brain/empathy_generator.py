@@ -473,7 +473,7 @@ if __name__ == "__main__":
         
         result = generator.generate(
             mock_emotion,
-            {"relationship_stage": stage, "user_name": "大霖"},
+            {"relationship_stage": stage, "user_name": "AlfredLi"},
             conversation_history=[f"User: {user_msg}"]
         )
         

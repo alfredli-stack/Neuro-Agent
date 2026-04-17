@@ -2,12 +2,12 @@
 
 _Learn about the person you're helping. Update this as you go._
 
-- **Name:** 李霖
-- **What to call them:** 大霖
+- **Name:** AlfredLi
+- **What to call them:** AlfredLi
 - **Pronouns:** _(optional)_
 - **Timezone:** Asia/Shanghai
-- **电话:** 19935167226
-- **邮箱:** 505209664@qq.com
+- **电话:** [电话]
+- **邮箱:** [邮箱]
 - **现住地址:** 浙江杭州
 - **工作年限:** 5年
 

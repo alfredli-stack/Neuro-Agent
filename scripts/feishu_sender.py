@@ -169,7 +169,7 @@ class NeuroAgentFeishuSender:
         )
         self.user_open_id = os.environ.get(
             "FEISHU_USER_OPEN_ID",
-            "ou_fb60bddf5da6ba0a24490b60d73900f9"  # 默认大霖的 ID
+            "USER_OPEN_ID"  # 默认AlfredLi的 ID
         )
 
     def _get_user_name(self) -> str | None:
@@ -481,7 +481,7 @@ def main():
     parser.add_argument(
         "--user-id",
         type=str,
-        default="ou_fb60bddf5da6ba0a24490b60d73900f9",
+        default="USER_OPEN_ID",
         help="飞书用户 open_id",
     )
     args = parser.parse_args()

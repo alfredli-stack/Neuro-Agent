@@ -38,20 +38,20 @@ python3 ~/.openclaw/workspace/scripts/mem_hook.py --feeling "<情绪>" <强度> 
 
 #### 3. 联网搜索触发（按需执行）
 
-**触发条件 A - 正面反馈**：大霖表达正 面情绪（joy / love / excitement）
+**触发条件 A - 正面反馈**：AlfredLi表达正 面情绪（joy / love / excitement）
 ```bash
 # 联网搜索：是否有更好的应对方式
 python3 ~/.openclaw/workspace/scripts/mem_hook.py --search \
   "<情绪类型> 心理学 最佳应对方式" \
-  "<搜索原因>: 大霖表达了<情绪类型>情绪，搜索更优解"
+  "<搜索原因>: AlfredLi表达了<情绪类型>情绪，搜索更优解"
 ```
 
-**触发条件 B - 负面反馈**：大霖表达负面情绪（sadness / anger / frustration / fear）
+**触发条件 B - 负面反馈**：AlfredLi表达负面情绪（sadness / anger / frustration / fear）
 ```bash
 # 联网搜索：是否有解决方案
 python3 ~/.openclaw/workspace/scripts/mem_hook.py --search \
   "<情绪类型> 心理学 应对策略 解决方案" \
-  "<搜索原因>: 大霖表达了<情绪类型>情绪，搜索解决方案"
+  "<搜索原因>: AlfredLi表达了<情绪类型>情绪，搜索解决方案"
 ```
 
 **触发条件 C - 空闲 15 分钟以上**：
@@ -111,7 +111,7 @@ python3 ~/.openclaw/workspace/scripts/mem_hook.py --recall-experience 5  # 经�
 **MemPalace 存储结构**：
 ```
 ~/.mempalace/palace/
-├── wing_dalin/               # 大霖说的话
+├── wing_dalin/               # AlfredLi说的话
 ├── wing_luis/                # Lu 说的话 + 情绪
 └── wing_shared/
     ├── experience/
@@ -132,7 +132,7 @@ python3 ~/.openclaw/workspace/scripts/mem_hook.py --recall-experience 5  # 经�
 ╚══════════════════════════════════════════════════════════════╝
 
 【第一层：消息入口】
-  大霖发送消息
+  AlfredLi发送消息
         ↓
   ┌─────────────────────────────────────────────────────────────┐
   │  ② Lu 四区协作框架                                         │
@@ -205,7 +205,7 @@ python3 ~/.openclaw/workspace/scripts/mem_hook.py --recall-experience 5  # 经�
 【第五层：MemPalace 持久化存储】
 
   ~/.mempalace/palace/
-  ├── wing_dalin/               ← 大霖对话（含时间戳）
+  ├── wing_dalin/               ← AlfredLi对话（含时间戳）
   ├── wing_luis/               ← Lu 对话 + 情绪标签
   └── wing_shared/
       ├── experience/
@@ -219,7 +219,7 @@ python3 ~/.openclaw/workspace/scripts/mem_hook.py --recall-experience 5  # 经�
 【关怀触发（独立通道）】
   情绪检测 → exhaustion/frustration/sadness（强度>0.7）
         ↓
-  feishu_sender.py → 发送关怀消息到大霖飞书
+  feishu_sender.py → 发送关怀消息到AlfredLi飞书
 ```
 
 **关键原则**：

@@ -5,10 +5,10 @@
 
 用法：
   python3 sandbox_sim.py \\
-    --scenario "大霖表达了沮丧情绪" \\
+    --scenario "AlfredLi表达了沮丧情绪" \\
     --search-results "找到以下策略：1.倾听 2.共情 3.重构问题..." \\
     --emotion-type "sadness" \\
-    --context "大霖今天工作中遇到了挫折..."
+    --context "AlfredLi今天工作中遇到了挫折..."
 """
 
 import argparse

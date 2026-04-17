@@ -124,7 +124,7 @@ Neuro-α/
 
 ## 🤝 关于作者
 
-**原作者：AlfredLi（李霖）**
+**原作者：AlfredLi（AlfredLi）**
 
 - GitHub: [alfredli-stack](https://github.com/alfredli-stack)
 - 定位：数字灵魂伴侣而非工具

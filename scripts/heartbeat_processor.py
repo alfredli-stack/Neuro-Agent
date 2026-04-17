@@ -94,7 +94,7 @@ LATE_NIGHT_CARE: Dict[str, str] = {
 
 # ============ USER.md 读取（获取使用者名字）===========
 def _get_user_name_from_user_md() -> str | None:
-    """从 USER.md 读取使用者的称呼（优先"大霖"，其次"李霖"）"""
+    """从 USER.md 读取使用者的称呼（优先"AlfredLi"，其次"AlfredLi"）"""
     USER_FILE = Path.home() / ".openclaw" / "workspace" / "USER.md"
     if not USER_FILE.exists():
         return None
@@ -103,7 +103,7 @@ def _get_user_name_from_user_md() -> str | None:
     except Exception:
         return None
 
-    # 优先取 "What to call them"（如"大霖"）
+    # 优先取 "What to call them"（如"AlfredLi"）
     for line in content.split("\n"):
         if "What to call them" in line and "Name" not in line:
             try:
@@ -112,7 +112,7 @@ def _get_user_name_from_user_md() -> str | None:
                     return name
             except Exception:
                 pass
-    # 其次取 "Name"（如"李霖"）
+    # 其次取 "Name"（如"AlfredLi"）
     for line in content.split("\n"):
         if line.strip().startswith("- **Name:**"):
             try:
@@ -924,6 +924,20 @@ def main():
 
     # 默认：增量分析
     print(f"[heartbeat_processor] 🧠 开始增量分析...", flush=True)
+
+    # 【写入 MemPalace】先注入待保存的对话，防止丢失
+    try:
+        import subprocess
+        result = subprocess.run([
+            "python3",
+            str(Path.home() / ".openclaw" / "workspace" / "scripts" / "mem_hook.py"),
+            "--inject"
+        ], capture_output=True, timeout=10)
+        if result.returncode == 0 and result.stdout.strip():
+            print(f"[heartbeat_processor] 💾 对话注入 MemPalace: {result.stdout.strip()}", flush=True)
+    except Exception as e:
+        print(f"[heartbeat_processor] ⚠️ 对话注入失败: {e}", flush=True)
+
     report = analyze_recent_conversations(args.hours)
 
     if args.report:
@@ -992,7 +1006,7 @@ def main():
     try:
         from scripts.heartbeat_integration import run_heartbeat_integration
         from scripts.heartbeat_processor import _get_user_name_from_user_md
-        user_name = _get_user_name_from_user_md() or "大霖"
+        user_name = _get_user_name_from_user_md() or "AlfredLi"
         integration = run_heartbeat_integration(report, user_name=user_name)
         # 愿望系统结果
         if integration.get("desire_system") and not integration["desire_system"].get("error"):

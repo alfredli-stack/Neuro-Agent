@@ -300,7 +300,7 @@ class InputProcessor:
 
         # ===== 【保险机制】最底层旁路记录 =====
         # 不管任何环节成功与否，先把原话记录下来
-        # 这是最后一道防线，确保大霖的话永远不会丢失
+        # 这是最后一道防线，确保AlfredLi的话永远不会丢失
         self._backup_record(user_input, context)
 
         # ===== Phase 0: 自我定位 =====
@@ -436,7 +436,7 @@ class InputProcessor:
         将对话注入 MemPalace 中转站
 
         注入内容：
-        1. 大霖说的话 + 情绪 + 欲望 + 想法
+        1. AlfredLi说的话 + 情绪 + 欲望 + 想法
         2. Lu 的回应 + 情绪
         3. 自动分类到 wing
         """
@@ -447,7 +447,7 @@ class InputProcessor:
             from neuro_mempalace import create_memory_unit
             from datetime import datetime
 
-            # 提取大霖的情绪
+            # 提取AlfredLi的情绪
             emotion_type = left_result.get("emotion_type", "neutral")
             emotion_score = left_result.get("emotion_score", 0.5)
             emotion_label = left_result.get("emotion_label", emotion_type)
@@ -471,16 +471,16 @@ class InputProcessor:
             if intent_type == "task_request":
                 context_tags.append("任务")
 
-            # 【注入大霖说的话】
+            # 【注入AlfredLi说的话】
             dalin_unit = create_memory_unit(
-                who="大霖",
+                who="AlfredLi",
                 what=user_input,
                 detail=f"情绪:{emotion_label} {emotion_score:.1f} | 意图:{intent_type}",
                 feeling_label=emotion_type,
                 feeling_intensity=emotion_score,
                 context=context_tags
             )
-            self.memory_injector.inject(who="大霖", what=user_input, detail=dalin_unit.detail,
+            self.memory_injector.inject(who="AlfredLi", what=user_input, detail=dalin_unit.detail,
                                          feeling_label=emotion_type, feeling_intensity=emotion_score,
                                          context=context_tags)
 
@@ -503,7 +503,7 @@ class InputProcessor:
                 self.memory_injector.inject(
                     who="Lu",
                     what=luis_response,
-                    detail=f"回应大霖:{user_input[:30]}... | 策略:{right_result.get('strategy_type', 'unknown')}",
+                    detail=f"回应AlfredLi:{user_input[:30]}... | 策略:{right_result.get('strategy_type', 'unknown')}",
                     feeling_label=luis_feeling,
                     feeling_intensity=luis_intensity,
                     context=shared_context
@@ -519,7 +519,7 @@ class InputProcessor:
         不管任何环节成功与否，只要 InputProcessor 收到输入，
         就先把这个输入记录到 MemPalace。
 
-        这是最后一道防线，确保大霖的话永远不会丢失。
+        这是最后一道防线，确保AlfredLi的话永远不会丢失。
 
         记录内容：
         - 原始输入（user_input）
@@ -537,7 +537,7 @@ class InputProcessor:
 
             # 直接记录原话，不管任何分析结果
             injector.inject(
-                who="大霖",
+                who="AlfredLi",
                 what=user_input,
                 detail=f"【旁路保险】原始输入 | 长度:{len(user_input)}",
                 feeling_label="neutral",
@@ -566,7 +566,7 @@ class InputProcessor:
         3. 负反馈时 - 分析哪里做错，如何改进
         4. 检索无果时 - 补充知识
 
-        核心观点：大霖说得对，学习是持续的过程，不是补救
+        核心观点：AlfredLi说得对，学习是持续的过程，不是补救
         """
         if not self._learning_initialized or not self.learning_engine:
             return
@@ -645,7 +645,7 @@ class InputProcessor:
 
         检索策略：
         1. 语义搜索用户输入
-        2. 检索大霖和 Lu 的相关记忆
+        2. 检索AlfredLi和 Lu 的相关记忆
         3. 按时间排序
         4. 重点关注高情绪强度的记忆
         """
