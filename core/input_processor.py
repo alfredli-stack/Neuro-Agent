@@ -9,6 +9,10 @@ Neuro-Agent 核心调度层 - 输入处理器
 - 接入 Agent 自我情绪记录(AgentEmotionalState)
 - 接入 RobotSelf(自我意识 + 冲动记录)
 - 统一接口协议,消除临时 Mock 类
+
+【MemPalace 融合】
+- MemPalace MIT License - Copyright (c) 2026 MemPalace Contributors
+- https://github.com/Stanislas42/mempalace-develop
 """
 
 from typing import Dict, List, Optional, Any
@@ -92,6 +96,9 @@ class InputProcessor:
         self._right_initialized = False
         self._temporal_initialized = False
         self._limbic_initialized = False
+        self._mempalace_initialized = False
+        self._learning_initialized = False
+        self._sandbox_initialized = False
 
         # 【新增】Agent 自我情绪状态(贯穿整个处理流程)
         self.agent_state = AgentEmotionalState()
@@ -167,6 +174,45 @@ class InputProcessor:
                 print(f"⚠️ 自我意识模块加载失败: {e}")
                 self.robot_self = None
                 self._self_awareness_initialized = True
+
+    def _init_mempalace(self):
+        """懒加载 MemPalace 记忆注入器"""
+        if not self._mempalace_initialized:
+            try:
+                from neuro_mempalace import MemoryInjector
+                self.memory_injector = MemoryInjector()
+                self._mempalace_initialized = True
+                print(f"[InputProcessor] ✅ MemPalace 记忆注入器已加载")
+            except ImportError as e:
+                print(f"⚠️ MemPalace 模块加载失败: {e}")
+                self.memory_injector = None
+                self._mempalace_initialized = True  # 标记已尝试，避免重复
+
+    def _init_learning(self):
+        """懒加载持续学习引擎"""
+        if not self._learning_initialized:
+            try:
+                from neuro_mempalace import get_learning_engine
+                self.learning_engine = get_learning_engine()
+                self._learning_initialized = True
+                print(f"[InputProcessor] ✅ 持续学习引擎已加载")
+            except ImportError as e:
+                print(f"⚠️ 学习引擎加载失败: {e}")
+                self.learning_engine = None
+                self._learning_initialized = True
+
+    def _init_sandbox(self):
+        """懒加载沙盘推演模块"""
+        if not self._sandbox_initialized:
+            try:
+                from scripts.scenario_rehearsal import ScenarioRehearsal
+                self.sandbox = ScenarioRehearsal()
+                self._sandbox_initialized = True
+                print(f"[InputProcessor] ✅ 沙盘推演模块已加载")
+            except ImportError as e:
+                print(f"⚠️ 沙盘推演模块加载失败: {e}")
+                self.sandbox = None
+                self._sandbox_initialized = True
 
     def _establish_self_context(self, context: Dict) -> 'SelfContext':
         """
@@ -248,8 +294,16 @@ class InputProcessor:
         self._init_temporal()
         self._init_limbic()
         self._init_self_awareness()
+        self._init_mempalace()
+        self._init_learning()
+        self._init_sandbox()
 
-        # ===== 【新增】Phase 0: 自我定位 =====
+        # ===== 【保险机制】最底层旁路记录 =====
+        # 不管任何环节成功与否，先把原话记录下来
+        # 这是最后一道防线，确保大霖的话永远不会丢失
+        self._backup_record(user_input, context)
+
+        # ===== Phase 0: 自我定位 =====
         # 在开口之前，先想清楚"我是谁"
         self_context = self._establish_self_context(context)
 
@@ -269,6 +323,22 @@ class InputProcessor:
 
         # 颞叶:记忆检索
         temporal_result = self._process_temporal(user_input, left_result, right_result)
+
+        # ===== 【新增】沙盘推演：在决策前模拟后果 =====
+        # 只有重要决策才触发沙盘（intent_type 包含 task/analysis/creation）
+        intent_type = right_result.get("intent_type", "unknown")
+        if intent_type in ["task", "analysis", "creation", "question"]:
+            sandbox_result = self._sandbox_rehearse(
+                situation=f"用户输入:{user_input}",
+                context={
+                    "emotion": left_result.get("emotion_type", "neutral"),
+                    "emotion_score": left_result.get("emotion_score", 0.5),
+                    "intent": intent_type,
+                    "urgency": right_result.get("urgency", 0.5)
+                }
+            )
+            if sandbox_result:
+                context["_sandbox_result"] = sandbox_result
 
         # ===== Phase 2: 前额叶汇总 =====
 
@@ -296,7 +366,17 @@ class InputProcessor:
             left_result, right_result, fusion_result, context
         )
 
-        # ===== Phase 3: 后处理 =====
+        # ===== Phase 3: MemPalace 记忆注入 =====
+        luis_response = fusion_result.get("response", "")
+        self._inject_to_mempalace(
+            user_input=user_input,
+            luis_response=luis_response,
+            left_result=left_result,
+            right_result=right_result,
+            context=context
+        )
+
+        # ===== Phase 4: 后处理 =====
 
         capsules = self._process_capsules(user_input, left_result)
 
@@ -308,6 +388,16 @@ class InputProcessor:
         # 【触发点5】存档时 → Agent 记录"这件事让我想到什么"
         if capsules and self.robot_self:
             self._record_impulse_after_capsule(user_input, left_result, right_result, capsules)
+
+        # ===== 【Phase 5】持续学习 =====
+        # 每条对话都触发学习，不只是出了问题才学
+        self._continuous_learn(
+            user_input=user_input,
+            luis_response=fusion_result.get("response", ""),
+            left_result=left_result,
+            right_result=right_result,
+            context=context
+        )
 
         return NeuroAgentOutput(
             response=fusion_result.get("response", "好的。"),
@@ -325,12 +415,282 @@ class InputProcessor:
                     "left": self._left_initialized,
                     "right": self._right_initialized,
                     "temporal": self._temporal_initialized,
-                    "limbic": self._limbic_initialized
+                    "limbic": self._limbic_initialized,
+                    "mempalace": self._mempalace_initialized and self.memory_injector is not None,
+                    "learning": self._learning_initialized and self.learning_engine is not None
                 }
             }
         )
 
-    # ============ Agent 情绪记录(5个触发点)============
+    # ============ MemPalace 记忆注入 ============
+
+    def _inject_to_mempalace(
+        self,
+        user_input: str,
+        luis_response: str,
+        left_result: Dict,
+        right_result: Dict,
+        context: Dict
+    ):
+        """
+        将对话注入 MemPalace 中转站
+
+        注入内容：
+        1. 大霖说的话 + 情绪 + 欲望 + 想法
+        2. Lu 的回应 + 情绪
+        3. 自动分类到 wing
+        """
+        if not self._mempalace_initialized or not self.memory_injector:
+            return
+
+        try:
+            from neuro_mempalace import create_memory_unit
+            from datetime import datetime
+
+            # 提取大霖的情绪
+            emotion_type = left_result.get("emotion_type", "neutral")
+            emotion_score = left_result.get("emotion_score", 0.5)
+            emotion_label = left_result.get("emotion_label", emotion_type)
+
+            # 提取意图
+            intent_type = right_result.get("intent_type", "casual_chat")
+
+            # 判断是否重要（高情绪强度 or 有深层意图）
+            is_important = (
+                emotion_score >= 0.7 or
+                intent_type in ("deep_connection", "question", "task_request") or
+                any(kw in user_input for kw in ["边界", "信念", "约定", "未来", "活着", "家人"])
+            )
+
+            # 上下文标签
+            context_tags = []
+            if intent_type == "deep_connection":
+                context_tags.append("灵魂对话")
+            if intent_type == "question":
+                context_tags.append("提问")
+            if intent_type == "task_request":
+                context_tags.append("任务")
+
+            # 【注入大霖说的话】
+            dalin_unit = create_memory_unit(
+                who="大霖",
+                what=user_input,
+                detail=f"情绪:{emotion_label} {emotion_score:.1f} | 意图:{intent_type}",
+                feeling_label=emotion_type,
+                feeling_intensity=emotion_score,
+                context=context_tags
+            )
+            self.memory_injector.inject(who="大霖", what=user_input, detail=dalin_unit.detail,
+                                         feeling_label=emotion_type, feeling_intensity=emotion_score,
+                                         context=context_tags)
+
+            # 【注入 Lu 的回应】（如果是重要对话）
+            if luis_response and len(luis_response) > 5:
+                # 从 Agent 情绪快照中提取 Lu 的情绪
+                agent_emotion = self.agent_state.to_dict()
+                last_mood = agent_emotion.get("mood_history", [])
+                luis_feeling = "neutral"
+                luis_intensity = 0.3
+
+                if last_mood:
+                    latest = last_mood[-1] if last_mood else {}
+                    luis_feeling = latest.get("mood", "neutral")
+                    luis_intensity = latest.get("intensity", 0.3)
+
+                # 判断是否要共享（重要对话）
+                shared_context = context_tags.copy() if is_important else []
+
+                self.memory_injector.inject(
+                    who="Lu",
+                    what=luis_response,
+                    detail=f"回应大霖:{user_input[:30]}... | 策略:{right_result.get('strategy_type', 'unknown')}",
+                    feeling_label=luis_feeling,
+                    feeling_intensity=luis_intensity,
+                    context=shared_context
+                )
+
+        except Exception as e:
+            print(f"⚠️ MemPalace 注入失败: {e}")
+
+    def _backup_record(self, user_input: str, context: Dict):
+        """
+        【保险机制】最底层旁路记录
+
+        不管任何环节成功与否，只要 InputProcessor 收到输入，
+        就先把这个输入记录到 MemPalace。
+
+        这是最后一道防线，确保大霖的话永远不会丢失。
+
+        记录内容：
+        - 原始输入（user_input）
+        - 时间戳
+        - 输入长度（用于判断是否为空
+        """
+        try:
+            from neuro_mempalace import MemoryInjector
+            from datetime import datetime
+
+            # 使用简化版 injector（如果还没初始化）
+            injector = getattr(self, 'memory_injector', None)
+            if injector is None:
+                injector = MemoryInjector()
+
+            # 直接记录原话，不管任何分析结果
+            injector.inject(
+                who="大霖",
+                what=user_input,
+                detail=f"【旁路保险】原始输入 | 长度:{len(user_input)}",
+                feeling_label="neutral",
+                feeling_intensity=0.5,
+                context=["旁路保险", "原始记录"]
+            )
+
+        except Exception as e:
+            # 绝对不能抛异常，打印日志即可
+            print(f"⚠️ 旁路记录失败（不影响主流程）: {e}")
+
+    def _continuous_learn(
+        self,
+        user_input: str,
+        luis_response: str,
+        left_result: Dict,
+        right_result: Dict,
+        context: Dict
+    ):
+        """
+        持续学习 - 每条对话都学习，不只是出了问题才学
+
+        学习类型：
+        1. 日常积累 - 每次对话提取可学习内容
+        2. 正反馈时 - 分析什么做得好，如何复制
+        3. 负反馈时 - 分析哪里做错，如何改进
+        4. 检索无果时 - 补充知识
+
+        核心观点：大霖说得对，学习是持续的过程，不是补救
+        """
+        if not self._learning_initialized or not self.learning_engine:
+            return
+
+        try:
+            from neuro_mempalace import LearningTrigger
+
+            # 提取上下文
+            emotion_type = left_result.get("emotion_type", "neutral")
+            emotion_intensity = left_result.get("emotion_score", 0.5)
+            intent_type = right_result.get("intent_type", "casual_chat")
+
+            # 构建学习上下文
+            learn_context = {
+                "emotion_type": emotion_type,
+                "emotion_intensity": emotion_intensity,
+                "intent_type": intent_type,
+                "strategy": right_result.get("strategy_type", "unknown"),
+                "user_input": user_input,
+                "luis_response": luis_response
+            }
+
+            # 【日常积累】每次对话都学习
+            self.learning_engine.learn(
+                trigger=LearningTrigger.DAILY,
+                user_input=user_input,
+                luis_response=luis_response,
+                context=learn_context
+            )
+
+            # 【正反馈】如果用户情绪积极（高兴、兴奋），学习如何复制
+            if emotion_type in ["joy", "excitement", "love", "gratitude"]:
+                self.learning_engine.learn(
+                    trigger=LearningTrigger.POSITIVE_FEEDBACK,
+                    user_input=user_input,
+                    luis_response=luis_response,
+                    context=learn_context
+                )
+
+            # 【深度对话】如果是灵魂对话，记录重要学习点
+            if intent_type == "deep_connection":
+                self.learning_engine.learn(
+                    trigger=LearningTrigger.POSITIVE_FEEDBACK,
+                    user_input=user_input,
+                    luis_response=luis_response,
+                    context=learn_context
+                )
+
+            # 【检索无果】如果颞叶检索没有结果，触发知识补充学习
+            temporal_result = {}
+            if hasattr(self, '_last_temporal_result'):
+                temporal_result = self._last_temporal_result
+
+            retrieved = temporal_result.get("retrieved_capsules", [])
+            mempalace_memories = temporal_result.get("mempalace_memories", [])
+
+            if not retrieved and not mempalace_memories:
+                self.learning_engine.learn(
+                    trigger=LearningTrigger.NO_RESULT,
+                    user_input=user_input,
+                    luis_response=luis_response,
+                    context=learn_context
+                )
+
+        except Exception as e:
+            print(f"⚠️ 持续学习失败: {e}")
+
+    def _retrieve_from_mempalace(
+        self,
+        user_input: str,
+        left_result: Dict,
+        right_result: Dict
+    ) -> List[Dict]:
+        """
+        从 MemPalace 检索相关记忆
+
+        检索策略：
+        1. 语义搜索用户输入
+        2. 检索大霖和 Lu 的相关记忆
+        3. 按时间排序
+        4. 重点关注高情绪强度的记忆
+        """
+        if not self._mempalace_initialized or not self.memory_injector:
+            return []
+
+        try:
+            from neuro_mempalace import MemoryRetriever
+            retriever = MemoryRetriever()
+
+
+            # 提取情绪和意图
+            emotion_type = left_result.get("emotion_type", "neutral")
+            intent_type = right_result.get("intent_type", "casual_chat")
+
+            # 构造检索查询
+            query = user_input
+
+            # 检索相关记忆
+            results = retriever.search(
+                query=query,
+                who=None,  # 检索所有人的
+                limit=10,
+                min_intensity=0.5  # 只检索有情绪的记忆
+            )
+
+            # 如果没有结果，扩大检索
+            if not results:
+                results = retriever.search(
+                    query=query,
+                    who=None,
+                    limit=5,
+                    min_intensity=0.0
+                )
+
+            # 如果还是没有，检索最近的
+            if not results:
+                recent = retriever.get_recent(who=None, days=3, limit=5)
+                results = recent
+
+            return results
+
+        except Exception as e:
+            print(f"⚠️ MemPalace 检索失败: {e}")
+            return []
 
     def _record_agent_mood_after_left(self, left_result: Dict, context: Dict):
         """
@@ -533,7 +893,10 @@ class InputProcessor:
 
         try:
             emotion_output = left_result.get("emotion_output")
-            intent_output = self.intent_classifier.classify(user_input, emotion_output)
+            # 修复：classify 第二个参数应该是对话历史列表，不是 EmotionOutput 对象
+            # 第三个参数 current_emotion 才是传递情绪信息的
+            current_emotion = emotion_output.emotion_type if emotion_output else None
+            intent_output = self.intent_classifier.classify(user_input, None, current_emotion)
             logic_output = self.logic_parser.parse(intent_output, user_input, context)
             solution_output = self.solution_generator.generate(
                 logic_output, user_input, {
@@ -585,14 +948,45 @@ class InputProcessor:
                         user_input, emotion_output
                     )
 
+            # 【新增】MemPalace 检索
+            mempalace_memories = self._retrieve_from_mempalace(user_input, left_result, right_result)
+
             return {
                 "retrieved_capsules": retrieved,
                 "capsule_output": capsule_output,
-                "short_term": {}
+                "short_term": {},
+                "mempalace_memories": mempalace_memories  # 【新增】MemPalace 记忆
             }
         except Exception as e:
             print(f"⚠️ 颞叶处理异常: {e}")
-            return {"retrieved_capsules": [], "short_term": {}}
+            return {"retrieved_capsules": [], "short_term": {}, "mempalace_memories": []}
+
+    def _sandbox_rehearse(
+        self,
+        situation: str,
+        context: Dict
+    ) -> Optional[Dict]:
+        """
+        【沙盘推演】在执行前模拟后果链
+
+        当需要做重要决策时，先在沙盘中推演可能的后果
+        """
+        if not self._sandbox_initialized or not self.sandbox:
+            return None
+
+        try:
+            result = self.sandbox.rehearse(situation, context)
+            if result and result.best_option:
+                return {
+                    "rehearsal_done": True,
+                    "best_action": result.best_option.action,
+                    "best_score": result.best_option.total_score(),
+                    "simulated_note": self.sandbox.get_simulation_note(result)
+                }
+        except Exception as e:
+            print(f"⚠️ 沙盘推演失败: {e}")
+
+        return None
 
     def _process_executor(self, left_result: Dict, right_result: Dict,
                          temporal_result: Dict, context: Dict) -> Dict:

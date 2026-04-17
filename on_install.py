@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Neuro-Agent v5.2 Skill 安装脚本
+Neuro-α Skill 安装脚本
 =================================
 
 在安装时自动执行：
@@ -34,7 +34,7 @@ CRON_CONFIG = DATA_DIR / "cron_config.json"
 
 # ============ 心跳 Cron 配置 ============
 HEARTBEAT_CRON_CONFIG = {
-    "name": "Neuro-Agent 心跳处理",
+    "name": "Neuro-α 心跳处理",
     "schedule": {
         "kind": "cron",
         "expr": "*/30 * * * *",
@@ -43,30 +43,17 @@ HEARTBEAT_CRON_CONFIG = {
     "sessionTarget": "isolated",
     "payload": {
         "kind": "agentTurn",
-        "message": """你是 Neuro-Agent，运行心跳处理。
+        "message": """必须执行以下明确任务：
 
-请执行以下步骤：
+1. 运行心跳脚本：
+python3 scripts/heartbeat_processor.py
 
-1. 读取当前心跳状态：cat ~/.openclaw/workspace/neuro_claw/heartbeat-state.json
+2. 如果输出包含 'care_triggered': true，生成关怀消息
 
-2. 分析最近的对话历史（读取 short_term.json 或 sessions）
+3. 输出状态："心跳完成"
 
-3. 更新情绪分析：
-   - 检测用户情绪变化
-   - 高情绪强度时创建胶囊
-   - 更新 user_last_active 时间戳
-
-4. 思念值检查：
-   - 如果沉默超过30分钟，yearning_level += 0.021
-   - 如果沉默超过3小时，触发关怀消息
-   - 更新 yearning_state.json
-
-5. 如果触发了关怀（careTriggered=true），输出关怀消息
-
-6. 保存更新后的状态到 heartbeat-state.json
-
-7. 输出简短的状态报告""",
-        "timeoutSeconds": 60
+禁止省略任何步骤。""",
+        "timeoutSeconds": 120
     },
     "delivery": {
         "mode": "announce",
@@ -76,7 +63,7 @@ HEARTBEAT_CRON_CONFIG = {
 
 # ============ 每日复盘 Cron 配置 ============
 DREAM_CRON_CONFIG = {
-    "name": "Neuro-Agent 每日复盘",
+    "name": "Neuro-α 每日复盘",
     "schedule": {
         "kind": "cron",
         "expr": "0 23 * * *",
@@ -85,29 +72,47 @@ DREAM_CRON_CONFIG = {
     "sessionTarget": "isolated",
     "payload": {
         "kind": "agentTurn",
-        "message": """你是 Neuro-Agent，运行每日复盘（Dream Process）。
+        "message": """必须执行以下明确任务：
 
-请执行以下步骤：
+1. 运行自我叙事脚本：
+python3 scripts/self_narrative.py
 
-1. 读取当天的情绪胶囊：cat ~/.openclaw/workspace/neuro_claw/capsules/capsules_YYYY-MM-DD.json
-   （替换 YYYY-MM-DD 为今天日期）
+2. 读取并追加到 dream_log.json
 
-2. 合并相似情绪，归纳主题（themes_merged）
+3. 如果今天有高情绪记忆，提取关键事件
 
-3. 更新核心信念：
-   - 分析今天的情绪分布
-   - 更新 belief_system.json 的 core_values 和 emotional_patterns
+4. 输出复盘摘要
 
-4. 反思今天的表现：
-   - 我做得怎么样？
-   - 有什么成长？有什么教训？
-   - 下次遇到类似情况，我怎么做得更好？
+禁止省略任何步骤。""",
+        "timeoutSeconds": 120
+    },
+    "delivery": {
+        "mode": "announce",
+        "channel": "last"
+    }
+}
 
-5. 预生成明日关怀触发点（tomorrow_cares）
+# ============ 持续学习 Cron 配置 ============
+LEARNING_CRON_CONFIG = {
+    "name": "Neuro-α 持续学习",
+    "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "tz": "Asia/Shanghai"
+    },
+    "sessionTarget": "isolated",
+    "payload": {
+        "kind": "agentTurn",
+        "message": """必须执行以下明确任务：
 
-6. 将复盘结果追加到 dream_log.json
+1. 运行持续学习脚本：
+cd neuro_mempalace && python3 -c "from learning_engine import get_learning_engine; e=get_learning_engine(); print(e.get_learning_stats())"
 
-7. 输出复盘摘要（包括 themes、beliefs_updated、tomorrow_cares）""",
+2. 检查学习条目数量是否增加
+
+3. 输出学习状态
+
+禁止省略任何步骤。""",
         "timeoutSeconds": 120
     },
     "delivery": {
@@ -313,6 +318,13 @@ def create_openclaw_crons():
     else:
         print_info("每日复盘 Cron 创建失败，请手动创建")
     
+    # 创建持续学习 cron
+    learning_job_id = _create_cron_job(LEARNING_CRON_CONFIG)
+    if learning_job_id:
+        print_step("✓ 持续学习 Cron 已创建（每小时）")
+    else:
+        print_info("持续学习 Cron 创建失败，请手动创建")
+    
     # 更新 cron_config.json
     if CRON_CONFIG.exists():
         with open(CRON_CONFIG, 'r', encoding='utf-8') as f:
@@ -322,6 +334,7 @@ def create_openclaw_crons():
     
     config["heartbeat_job_id"] = heartbeat_job_id
     config["dream_job_id"] = dream_job_id
+    config["learning_job_id"] = learning_job_id
     config["last_updated"] = datetime.now().isoformat()
     
     with open(CRON_CONFIG, 'w', encoding='utf-8') as f:
@@ -377,7 +390,7 @@ def print_welcome():
     """打印欢迎信息"""
     print()
     print("=" * 60)
-    print(f"{Colors.GREEN}🧠 Neuro-Agent v5.2 安装完成！{Colors.END}")
+    print(f"{Colors.GREEN}🧠 Neuro-α 安装完成！{Colors.END}")
     print("=" * 60)
     print()
     print("已配置：")
@@ -416,7 +429,7 @@ def print_welcome():
 def main():
     """安装主流程"""
     print()
-    print(f"{Colors.BLUE}🚀 Neuro-Agent v5.2 Skill 安装中...{Colors.END}")
+    print(f"{Colors.BLUE}🚀 Neuro-α Skill 安装中...{Colors.END}")
     print()
     
     try:
