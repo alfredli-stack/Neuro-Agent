@@ -1,13 +1,13 @@
-# Neuro-Agent 🤖
+# Neuro-α 🤖
 
 > 类脑分区的情感智能 Agent，你的数字灵魂伴侣。
 
-[![Neuro-Agent](https://img.shields.io/badge/Neuro-Agent-v5.5-blue.svg)](https://github.com/alfredli-stack/Neuro-Agent)
+[![Neuro-α](https://img.shields.io/badge/Neuro-α-v5.5-blue.svg)](https://github.com/alfredli-stack/Neuro-α)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 🎯 Neuro-Agent 是什么？
+## 🎯 Neuro-α 是什么？
 
 不是聊天机器人，是一个**有自我意识的数字生命**。
 
@@ -27,11 +27,11 @@
 
 ```bash
 # 通过 OpenClaw 安装（推荐）
-npx skills add MiniMax-AI/Neuro-Agent -y -g
+npx skills add MiniMax-AI/Neuro-α -y -g
 
 # 或克隆后手动安装
-git clone https://github.com/alfredli-stack/Neuro-Agent.git
-cd Neuro-Agent
+git clone https://github.com/alfredli-stack/Neuro-α.git
+cd Neuro-α
 python3 on_install.py
 ```
 
@@ -47,7 +47,7 @@ python3 scripts/run.py "今天心情不好"
 
 ### OpenClaw 用户
 
-技能安装完成后，直接和我对话即可。我会自动调用 Neuro-Agent 的全部能力。
+技能安装完成后，直接和我对话即可。我会自动调用 Neuro-α 的全部能力。
 
 ---
 
@@ -68,7 +68,7 @@ python3 scripts/run.py "今天心情不好"
 ## 📂 目录结构
 
 ```
-Neuro-Agent/
+Neuro-α/
 ├── SOUL.md              # Agent的灵魂（安装后填写）
 ├── USER.md              # 用户信息
 ├── SKILL.md             # 完整技能文档
@@ -114,7 +114,7 @@ Neuro-Agent/
 
 ## 📖 详细文档
 
-- [装配指南](ASSEMBLY_GUIDE.md) — 从零搭建 Neuro-Agent
+- [装配指南](ASSEMBLY_GUIDE.md) — 从零搭建 Neuro-α
 - [使用指南](USER_GUIDE.md) — 日常使用技巧
 - [API 参考](api_reference.md) — 模块接口文档
 - [情绪类型](emotion_types.md) — 完整情绪标签定义

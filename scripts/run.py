@@ -3,7 +3,7 @@
 scripts/run.py
 ==============
 
-Neuro-Agent 可执行入口
+Neuro-α 可执行入口
 由 SKILL.md 中的 run() 指令调用
 
 用法：
@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-# 确保 Neuro-Agent 模块在路径中
+# 确保 Neuro-α 模块在路径中
 SCRIPT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
@@ -570,7 +570,7 @@ class SimpleRelationshipManager:
 # ============ 主执行器 ============
 class NeuroAgentRunner:
     """
-    Neuro-Agent 主执行器
+    Neuro-α 主执行器
     
     完整流程：
         1. 情绪检测（左脑）
@@ -770,7 +770,7 @@ class NeuroAgentRunner:
 
 # ============ CLI 入口 ============
 def main():
-    parser = argparse.ArgumentParser(description="Neuro-Agent - 类脑分区AI助手")
+    parser = argparse.ArgumentParser(description="Neuro-α - 类脑分区AI助手")
     parser.add_argument("input", nargs="?", help="用户输入")
     parser.add_argument("--hour", type=int, default=None, help="当前小时")
     parser.add_argument("--user_id", default="default", help="用户ID")
@@ -785,7 +785,7 @@ def main():
     if args.interactive or not args.input:
         # 交互模式
         print("=" * 50)
-        print("🧠 Neuro-Agent - 类脑分区AI助手")
+        print("🧠 Neuro-α - 类脑分区AI助手")
         print("输入 'quit' 或 'exit' 退出")
         print("=" * 50)
         
@@ -818,7 +818,7 @@ def main():
                     save_capsule=not args.no_save
                 )
                 
-                print(f"\n🤖 Neuro-Agent: {result['response']}")
+                print(f"\n🤖 Neuro-α: {result['response']}")
                 
                 if args.verbose:
                     print(f"\n📊 诊断信息:")

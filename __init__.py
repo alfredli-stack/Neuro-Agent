@@ -1,8 +1,8 @@
 """
-Neuro-Agent - 类脑分区AI助手
+Neuro-α - 类脑分区AI助手
 ============================
 
-Neuro-Agent 是一个模拟人脑分区架构的 AI 助手系统。
+Neuro-α 是一个模拟人脑分区架构的 AI 助手系统。
 
 架构设计：
     左脑区（情绪感知）：情绪检测 → 共情生成 → 胶囊工厂
@@ -22,7 +22,7 @@ Neuro-Agent 是一个模拟人脑分区架构的 AI 助手系统。
 """
 
 __version__ = "5.1.0"
-__author__ = "Neuro-Agent Team"
+__author__ = "Neuro-α Team"
 
 # 核心接口
 from core.input_processor import InputProcessor, process, get_instance

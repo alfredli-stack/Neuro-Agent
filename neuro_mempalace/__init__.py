@@ -1,8 +1,8 @@
 # neuro_mempalace/__init__.py
 """
-Neuro-Agent × MemPalace 融合模块
+Neuro-α × MemPalace 融合模块
 
-整合 MemPalace（中转站）与 Neuro-Agent（情感引擎）
+整合 MemPalace（中转站）与 Neuro-α（情感引擎）
 
 模块组成：
 - memory_unit: 记忆单元数据模型

@@ -1,4 +1,4 @@
-# Neuro-Agent 组装说明书
+# Neuro-α 组装说明书
 > 生成时间：2026-04-17
 > 版本：v5.5
 > 
@@ -1500,7 +1500,7 @@ class DreamResult:
 ### Step 1: 创建目录结构
 
 ```bash
-mkdir -p ~/.qclaw/skills/Neuro-Agent/{core,left_brain,right_brain,prefrontal,temporal,limbic,references}
+mkdir -p ~/.qclaw/skills/Neuro-α/{core,left_brain,right_brain,prefrontal,temporal,limbic,references}
 mkdir -p ~/.openclaw/workspace/neuro_claw/{capsules/{short_term,long_term,vectors},relationship,logs}
 ```
 
@@ -1695,7 +1695,7 @@ class CircuitBreaker:
    ```
 
 4. **存储路径**
-   - 代码: `~/.qclaw/skills/Neuro-Agent/`
+   - 代码: `~/.qclaw/skills/Neuro-α/`
    - 数据: `~/.openclaw/workspace/neuro_claw/`
 
 5. **胶囊ID格式**
@@ -1737,6 +1737,6 @@ class CircuitBreaker:
 
 ---
 
-_本文档是 Neuro-Agent 组装的唯一信任源_
+_本文档是 Neuro-α 组装的唯一信任源_
 _编写时间: 2026-04-10 23:10_
 _下次更新: 每次模块开发后同步更新_

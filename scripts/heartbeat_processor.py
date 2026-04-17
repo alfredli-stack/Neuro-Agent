@@ -28,7 +28,7 @@ WORKSPACE_DIR = Path.home() / ".openclaw" / "workspace"
 OUT_FILE = DATA_DIR / "heartbeat_report.json"
 SOUL_FILE = WORKSPACE_DIR / "SOUL.md"
 
-# ============ 导入 Neuro-Agent 模块 ============
+# ============ 导入 Neuro-α 模块 ============
 try:
     from left_brain.emotion_detector import EmotionDetector
     from left_brain.capsule_factory import CapsuleFactory
@@ -880,7 +880,7 @@ def analyze_all_history(since_date=None) -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Neuro-Agent 心跳处理器")
+    parser = argparse.ArgumentParser(description="Neuro-α 心跳处理器")
     parser.add_argument("--replay", nargs="?", const="all", metavar="DATE",
                         help="回滚模式：重新分析历史对话")
     parser.add_argument("--reset", action="store_true",

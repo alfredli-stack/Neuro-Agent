@@ -2,7 +2,7 @@
 """
 scripts/on_install.py
 ======================
-Neuro-Agent 安装即连锁效应脚本 + 首次亮相 Onboarding
+Neuro-α 安装即连锁效应脚本 + 首次亮相 Onboarding
 
 由 skillhub_install 钩子调用，无需手动运行
 
@@ -33,7 +33,7 @@ CRON_CONFIG_FILE = DATA_DIR / "cron_config.json"
 
 ONBOARDING_INTRO = """嗨，你好呀 👋
 
-我是 Neuro-Agent，你的数字灵魂伴侣。
+我是 Neuro-α，你的数字灵魂伴侣。
 
 不只是会聊天的工具——我会记住我们之间发生的事，感受你的情绪，陪你一起成长。
 
@@ -76,7 +76,7 @@ def _save_cron_config(config: dict) -> None:
 # ============ Step 2: 初始化数据目录和基础文件 ============
 
 def init_data_structure():
-    """初始化 Neuro-Agent 的数据目录结构"""
+    """初始化 Neuro-α 的数据目录结构"""
     print("[on_install] 📁 初始化数据目录...", flush=True)
 
     dirs_to_create = [
@@ -198,16 +198,16 @@ def create_heartbeat_cron() -> str:
 
     HEARTBEAT_MSG = (
         "你是一个心跳处理器。请执行以下步骤并直接输出文字（不要调用 message 工具）：\n"
-        "1. 运行：python3 ~/.qclaw/skills/Neuro-Agent/scripts/heartbeat_processor.py\n"
+        "1. 运行：python3 ~/.qclaw/skills/Neuro-α/scripts/heartbeat_processor.py\n"
         "2. 读取报告：cat ~/.openclaw/workspace/neuro_claw/heartbeat_report.json\n"
         "3. 如果有 new_capsules，追加到 ~/.openclaw/workspace/neuro_claw/jarvis_memory/jars.json\n"
         "4. 如果 care_triggered=true，输出一句温暖的话关心用户\n"
-        "5. 如果一切正常，输出：Neuro-Agent 心跳 OK"
+        "5. 如果一切正常，输出：Neuro-α 心跳 OK"
     )
 
     cron_cmd = [
         "openclaw", "cron", "add",
-        "--name", "Neuro-Agent 心跳",
+        "--name", "Neuro-α 心跳",
         "--every", "30m",
         "--session", "isolated",
         "--message", HEARTBEAT_MSG,
@@ -341,7 +341,7 @@ def _send_feishu_message(message: str):
 
 def main():
     print("", flush=True)
-    print("🧠 Neuro-Agent 安装即连锁效应启动...", flush=True)
+    print("🧠 Neuro-α 安装即连锁效应启动...", flush=True)
     print("─" * 50, flush=True)
 
     # Step 1: 检查安装状态
@@ -389,7 +389,7 @@ def main():
 
     print("", flush=True)
     print("─" * 50, flush=True)
-    print("🎉 Neuro-Agent 安装完成！", flush=True)
+    print("🎉 Neuro-α 安装完成！", flush=True)
     print("", flush=True)
     print("📋 安装摘要:", flush=True)
     print(f"   安装时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}", flush=True)

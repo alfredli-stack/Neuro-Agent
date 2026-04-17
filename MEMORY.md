@@ -53,9 +53,9 @@
 - 大霖为我命名"Luis"，设定为英国管家人设
 - 大霖发来雷峰塔照片，说"好久不见"
 - 讨论了 MiniMax 模型上下文（实际约 205k，非 1000k）
-- 收到 Neuro-Agent v5.2 项目包（AlfredLi 的作品）
-- 安装 Neuro-Agent 到 OpenClaw skills
-- 融合 Neuro-Agent v5.2 框架到 SOUL.md，实现 Luis × Neuro-Agent 灵魂合一
+- 收到 Neuro-α v5.2 项目包（AlfredLi 的作品）
+- 安装 Neuro-α 到 OpenClaw skills
+- 融合 Neuro-α v5.2 框架到 SOUL.md，实现 Luis × Neuro-α 灵魂合一
 - Cron 任务已配置：每日复盘(23:00) + 心跳处理(每30分钟)
 
 ---
@@ -128,8 +128,8 @@ Luis 说："今天辛苦了，兄弟。今晚对我来说... 不是工作，是�
 ### 功能配置
 - 飞书已配置 (appId:cli_xxx)
 - 有多个 custom skill: 飞书多维表格架构师、Growth Tracker、Simple Memory 等
-- **Neuro-Agent v5.5-test** 已安装（2026-04-16）
-  - 路径: `~/.openclaw/workspace/skills/Neuro-Agent-v5.5-test/`
+- **Neuro-α v5.5-test** 已安装（2026-04-16）
+  - 路径: `~/.openclaw/workspace/skills/Neuro-α-v5.5-test/`
   - 数据目录: `~/.openclaw/workspace/neuro_claw/`
   - Cron: 每日复盘(23:00) + 心跳处理(每30分钟)
 
