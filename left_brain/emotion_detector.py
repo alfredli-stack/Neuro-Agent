@@ -71,9 +71,32 @@ COMPOUND_NEGATIONS = [(re.compile(p, re.IGNORECASE), e) for p, e in _COMPOUND_NE
 # ============ 情绪关键词字典 ============
 EMOTION_KEYWORDS = {
     "joy": {
-        "primary": ["开心", "快乐", "高兴", "幸福", "愉快", "爽", "棒", "太好了", "太棒了", "兴奋", "激动", "欢乐", "欢快", "美好", "完美", "赞", "绝"],
-        "secondary": ["好开心", "超开心", "太开心", "很开心", "挺开心", "嗨", "happy", "joy"],
-        "intensity_boost": ["超级", "无敌", "简直", "太", "超", "无比", "无比", "简直了", "太tm", "TMD"]
+        "primary": [
+            "开心", "快乐", "高兴", "幸福", "愉快", "爽", "棒", "太好了", "太棒了",
+            "兴奋", "激动", "欢乐", "欢快", "美好", "完美", "赞", "绝",
+            "心情好", "心情不错", "心情很好", "心情开心",
+            "很好", "挺好", "还不错", "还挺好的",
+            "好", "真好", "蛮好", "可好",
+            "乐", "可乐", "乐呵", "乐呵呵",
+            "快活", "轻快", "舒畅", "惬意",
+            "美滋滋", "美美的", "好幸福", "好满足", "满足", "很满足",
+            "舒服", "很舒服", "很舒心", "舒心",
+            "愉悦", "欢愉", "喜悦", "喜滋滋",
+            "愉快的一天", "今日开心", "今天开心"
+        ],
+        "secondary": [
+            "好开心", "超开心", "太开心", "很开心", "挺开心",
+            "好高兴", "特别高兴", "好快乐", "好愉快",
+            "好舒服", "好幸福", "好满足", "好惬意",
+            "好愉悦", "好轻快", "好舒畅",
+            "心情愉悦", "心情舒畅", "心情美滋滋",
+            "嗨", "happy", "joy", "好嗨", "好嗨啊",
+            "哈哈", "嘻嘻", "嘿嘿", "开心开心"
+        ],
+        "intensity_boost": [
+            "超级", "无敌", "简直", "太", "超", "无比", "简直了",
+            "太tm", "TMD", "巨", "贼", "好家伙", "简直了"
+        ]
     },
     "excitement": {
         "primary": ["兴奋", "激动", "热血", "沸腾", "心跳加速", "搓手", "期待", "迫不及待", "啊啊啊", "哇塞", "牛", "厉害"],
@@ -499,12 +522,35 @@ class EmotionDetector:
                 negation_emotions.append(emotion)
                 negation_filtered.append(negated_emotion_word)
         
+        # 特殊复合否定："不错"="不"+"错"→ positive（不是否定正面，是肯定正面）
+        if re.search(r'不(?:错|坏|赖|差|慢)', text_lower):
+            negation_emotions.append('joy')
+        
         negated_ranges = self._find_negated_ranges(text_lower)
         
         matched_emotions = []
         matched_keywords = []
         primary_matches: Dict[str, int] = {}
         secondary_matches: Dict[str, int] = {}
+        
+        # 正面情绪词被否定时，映射到反面情绪
+        positive_to_negative = {
+            "joy": "sadness",
+            "excitement": "frustration",
+            "love": "sadness",
+            "gratitude": "indifference",
+            "hope": "despair",
+        }
+        # 负面情绪词被否定时，映射到正面情绪
+        negative_to_positive = {
+            "sadness": "joy",
+            "frustration": "excitement",
+            "anger": "gratitude",
+            "fear": "hope",
+            "anxiety": "calm",
+            "exhaustion": "energy",
+            "loneliness": "connection",
+        }
         
         for emotion, data in self.emotion_keywords.items():
             if emotion in negation_emotions:
@@ -518,6 +564,10 @@ class EmotionDetector:
                     is_negated = self._is_word_negated(kw, text_lower, negated_ranges)
                     if is_negated:
                         negation_filtered.append(kw)
+                        if emotion in positive_to_negative:
+                            matched_emotions.append(positive_to_negative[emotion])
+                        elif emotion in negative_to_positive:
+                            matched_emotions.append(negative_to_positive[emotion])
                         continue
                     primary_count += 1
                     matched_keywords.append(kw)
@@ -527,6 +577,10 @@ class EmotionDetector:
                     is_negated = self._is_word_negated(kw, text_lower, negated_ranges)
                     if is_negated:
                         negation_filtered.append(kw)
+                        if emotion in positive_to_negative:
+                            matched_emotions.append(positive_to_negative[emotion])
+                        elif emotion in negative_to_positive:
+                            matched_emotions.append(negative_to_positive[emotion])
                         continue
                     secondary_count += 1
                     matched_keywords.append(kw)
@@ -733,20 +787,40 @@ class EmotionDetector:
         for neg_word in NEGATION_WORDS:
             for match in re.finditer(re.escape(neg_word), text):
                 start = match.start()
-                end = min(start + len(neg_word) + 6, len(text))
+                end = start + len(neg_word)
                 ranges.append((start, end))
         return ranges
     
     def _is_word_negated(self, word: str, text: str, negated_ranges: List[tuple]) -> bool:
-        """判断情绪词是否被否定覆盖"""
+        """判断情绪词是否被否定覆盖
+
+        逻辑：
+        - 否定词必须在情绪词之前
+        - 单字否定（"不"/"别"）：必须在 phrase 开头（位置0）或前一个字是标点/空格
+        - 复合否定（"不太"等）：需隔1-2字
+        - 重叠（如"特别"里的"别"）不算否定
+        """
+        SINGLE_NEG = {"不", "没", "非", "无", "别", "未", "莫", "勿"}
         for match in re.finditer(re.escape(word), text):
             word_start = match.start()
             word_end = match.end()
             for neg_start, neg_end in negated_ranges:
-                if neg_end > word_start and neg_start < word_end:
-                    return True
-                if 0 <= (word_start - neg_end) <= 2:
-                    return True
+                neg_word_len = neg_end - neg_start
+                neg_word = text[neg_start:neg_end]
+                gap = word_start - neg_end
+                
+                # 单字否定词：必须位于独立位置（非合成词的一部分）
+                if neg_word_len == 1 and neg_word in SINGLE_NEG:
+                    # 独立否定：位置0，或前一个是标点/空格
+                    is_independent = (neg_start == 0) or (
+                        neg_start > 0 and text[neg_start - 1] in ' \t,，、'
+                    )
+                    if is_independent and neg_start < word_start and 0 <= gap <= 1:
+                        return True
+                # 复合否定词：gap 需 1-2
+                elif neg_word_len > 1:
+                    if neg_start < word_start and 1 <= gap <= 2:
+                        return True
         return False
     
     def _detect_subtext(self, text: str) -> Dict:

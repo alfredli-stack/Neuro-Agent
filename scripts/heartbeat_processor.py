@@ -332,10 +332,15 @@ def _save_dynamic_care_state(state: Dict[str, Any]) -> None:
 
 def _record_user_activity():
     """当检测到用户有活跃对话时调用"""
+    now_ts = datetime.now().timestamp()
     state = _load_dynamic_care_state()
     state["last_active"] = datetime.now().isoformat()
     state["consecutive_negative"] = 0
     _save_dynamic_care_state(state)
+    # 同时更新社会化学习状态的时间戳（用于15分钟空闲检测）
+    sl_state = _load_social_learning_state()
+    sl_state["last_activity_timestamp"] = now_ts
+    _save_social_learning_state(sl_state)
 
 
 def _record_negative_emotion(emotion: str, intensity: float):
@@ -492,7 +497,8 @@ def _load_social_learning_state() -> Dict[str, Any]:
     return {
         "last_learning_date": None,
         "learning_count_today": 0,
-        "consecutive_idle_heartbeats": 0
+        "consecutive_idle_heartbeats": 0,
+        "last_activity_timestamp": datetime.now().timestamp()
     }
 
 
@@ -612,6 +618,8 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
         "new_capsules": [],
         "insights": [],
         "care_triggered": False,
+        "proactive_learning_triggered": False,
+        "proactive_learning_theme": None,
         "care_reason": None,
         "care_message": None,
         "status": "ok"
@@ -675,6 +683,19 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
                         "emotion": label,
                         "intensity": intensity
                     })
+                    # 【写入 MemPalace】统一记忆中枢
+                    try:
+                        import subprocess
+                        trigger = f"心跳检测到 {label} 情绪 (强度{intensity:.2f})"
+                        subprocess.run([
+                            "python3",
+                            str(Path.home() / ".openclaw/workspace/scripts/mem_hook.py"),
+                            "--learn",
+                            capsule.content.get("summary", user_text[:80]),
+                            trigger
+                        ], capture_output=True, timeout=5)
+                    except Exception:
+                        pass
 
         if emotion_scores:
             dominant = max(emotion_scores, key=emotion_scores.get)
@@ -704,6 +725,56 @@ def analyze_recent_conversations(hours: int = 2) -> Dict[str, Any]:
                 insights = vr.search(last_user, n=3)
                 if insights and insights.capsules:
                     report["insights"] = [c.get("original", "")[:80] for c in insights.capsules[:3]]
+
+        # ========== 15分钟空闲 → 主动联网学习 ==========
+        try:
+            from datetime import timezone
+            now_ts = datetime.now().timestamp()
+            # 获取最近一条消息的时间戳
+            last_ts = None
+            if recent:
+                last_entry = recent[-1]
+                last_ts_attr = getattr(last_entry, "timestamp", None)
+                if last_ts_attr:
+                    if isinstance(last_ts_attr, (int, float)):
+                        last_ts = last_ts_attr
+                    elif isinstance(last_ts_attr, str):
+                        try:
+                            last_dt = datetime.fromisoformat(last_ts_attr)
+                            last_ts = last_dt.timestamp()
+                        except Exception:
+                            pass
+            
+            # 也检查状态文件里的时间戳
+            state = _load_social_learning_state()
+            file_ts = state.get("last_activity_timestamp")
+            if file_ts:
+                try:
+                    file_ts = float(file_ts)
+                    if last_ts is None or file_ts < last_ts:
+                        last_ts = file_ts
+                except Exception:
+                    pass
+            
+            idle_minutes = (now_ts - last_ts) / 60 if last_ts else 999
+            
+            if idle_minutes >= 15:
+                print(f"[heartbeat] ⏰ 空闲 {idle_minutes:.0f}分钟，触发主动学习", flush=True)
+                try:
+                    proc = subprocess.run(
+                        ["python3", str(WORKSPACE_DIR / "scripts" / "proactive_learning.py")],
+                        capture_output=True, text=True, timeout=60
+                    )
+                    if proc.returncode == 0:
+                        report["proactive_learning_triggered"] = True
+                        report["proactive_learning_theme"] = "已触发主动学习流程"
+                        print(f"[heartbeat] ✅ 主动学习完成", flush=True)
+                    else:
+                        print(f"[heartbeat] ⚠️ 主动学习异常: {proc.stderr[:100]}", flush=True)
+                except Exception as e:
+                    print(f"[heartbeat] ⚠️ 主动学习失败: {e}", flush=True)
+        except Exception as e:
+            print(f"[heartbeat] ⚠️ 主动学习检查失败: {e}", flush=True)
 
         report["status"] = "ok"
 
@@ -780,6 +851,19 @@ def analyze_all_history(since_date=None) -> Dict[str, Any]:
                         "emotion": label,
                         "intensity": intensity
                     })
+                    # 【写入 MemPalace】统一记忆中枢
+                    try:
+                        import subprocess
+                        trigger = f"回溯分析检测到 {label} 情绪 (强度{intensity:.2f})"
+                        subprocess.run([
+                            "python3",
+                            str(Path.home() / ".openclaw/workspace/scripts/mem_hook.py"),
+                            "--learn",
+                            capsule.content.get("summary", user_text[:80]),
+                            trigger
+                        ], capture_output=True, timeout=5)
+                    except Exception:
+                        pass
 
         if emotion_scores:
             dominant = max(emotion_scores, key=emotion_scores.get)
